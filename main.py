@@ -23,6 +23,9 @@ def resizeFrame(frame, resize):
 
 
 def main(filename, resize=None, circle=None):
+    if len(filename) == 0:
+        raise ValueError('Filename is empty')
+
     if circle is None:
         # Detect circle
         print("Looking for circle")
@@ -122,4 +125,4 @@ def main(filename, resize=None, circle=None):
 
 if __name__ == '__main__':
     # main(filename='../Resources/clip2.mp4', resize=0.7, circle=(667, 377, 274))
-    main(filename='../Resources/clip6.mp4', resize=0.7, circle=(703, 361, 325))
+    main(filename='/Users/alexandre/PycharmProjects/OpenCV-Experiments/Resources/clip6.mp4', resize=0.7, circle=(703, 361, 325))

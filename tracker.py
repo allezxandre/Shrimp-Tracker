@@ -199,8 +199,6 @@ class Tracker:
                 # FIXME: Angle workaround
                 previous_angle = self.tracks[i].angle
                 self.tracks[i].correct(vectors[assignment[i]], flag=True)
-                new_angle = self.tracks[i].angle
-                print('Diff: {}'.format(new_angle - previous_angle))
 
             if (len(self.tracks[i].trace) > self.max_trace_length):
                 for j in range(len(self.tracks[i].trace) -
