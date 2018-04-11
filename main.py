@@ -4,12 +4,12 @@ import cv2
 import numpy as np
 
 from Circle_Detection.circle_crop import CircleCrop
-from Shrimp_Tracker.TrackWindow import TrackWindow
-from Shrimp_Tracker.crop import Crop
-from Shrimp_Tracker.detector import Detector
-from Shrimp_Tracker.tracer import TracerPlot
-from Shrimp_Tracker.tracker import Tracker, CX, CY
-from Shrimp_Tracker.utils import generate_color_set, side_by_side
+from TrackWindow import TrackWindow
+from crop import Crop
+from detector import Detector
+from tracer import TracerPlot
+from tracker import Tracker, CX, CY
+from utils import generate_color_set, side_by_side
 
 PAUSE_KEY = ord('p')
 FRAME_BY_FRAME_KEY = ord(' ')

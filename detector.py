@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 from Circle_Detection.circle_crop import CircleCrop
-from Shrimp_Tracker.utils import side_by_side
+from utils import side_by_side
 
 
 class Detector(object):

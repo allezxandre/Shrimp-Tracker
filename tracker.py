@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from Shrimp_Tracker.kalman_filter_acceleration import KalmanFilterConstantAcceleration
-from Shrimp_Tracker.tracer import Tracer
+from kalman_filter_acceleration import KalmanFilterConstantAcceleration
+from tracer import Tracer
 
 
 class Shrimp:

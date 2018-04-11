@@ -3,7 +3,7 @@ import math
 import cv2
 import numpy as np
 
-from Shrimp_Tracker.tracker import Shrimp
+from tracker import Shrimp
 
 
 class Crop(object):
