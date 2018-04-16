@@ -108,7 +108,6 @@ class FilePrompter(Tkinter.Tk):
         dlg = filedialog.Open(self, filetypes=ftypes,
                               initialfile=self.filename_entry_var.get() if len(self.filename_entry_var.get()) > 0 else None)
         fl = dlg.show()
-
         self.filename_entry_var.set(fl)
 
     def onOKPressed(self):

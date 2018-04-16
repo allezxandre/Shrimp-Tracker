@@ -1,4 +1,5 @@
 import copy
+import time
 
 import cv2
 import numpy as np
@@ -126,3 +127,4 @@ def main(filename, resize=None, circle=None):
 if __name__ == '__main__':
     # main(filename='../Resources/clip2.mp4', resize=0.7, circle=(667, 377, 274))
     main(filename='/Users/alexandre/PycharmProjects/OpenCV-Experiments/Resources/clip6.mp4', resize=0.7, circle=(703, 361, 325))
+    #CircleCrop.find_circle('/Users/alexandre/PycharmProjects/OpenCV-Experiments/Resources/clip6.mp4',resize=0.7)

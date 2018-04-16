@@ -1,6 +1,23 @@
 import cv2
 import numpy as np
+import multiprocessing as mp
 
+
+def find_circles_in_frame(frame, resize, minDist):
+    if resize is not None:
+        frame = cv2.resize(frame, (0, 0), fx=resize, fy=resize)
+
+    # convert to greyscale
+    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Find circles
+    circles = cv2.HoughCircles(frame_gray, cv2.HOUGH_GRADIENT, 2, minDist=minDist, param1=255, param2=300)
+    if circles is not None:
+        circles = np.round(circles[0, :]).astype("int")
+        circles = circles[circles[:, 2].argsort()]
+        return circles[-1]
+    else:
+        return None
 
 class CircleCrop:
 
@@ -67,27 +84,23 @@ class CircleCrop:
         """
         cap = cv2.VideoCapture(input)
 
-        centers = np.empty((0, 3), int)
-
         ret, frame = cap.read()
+        frames = []
         while ret:
-            if resize is not None:
-                frame = cv2.resize(frame, (0, 0), fx=resize, fy=resize)
-
-            # convert to greyscale
-            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-            # Find circles
-            circles = cv2.HoughCircles(frame_gray, cv2.HOUGH_GRADIENT, 2, minDist=minDist, param1=255, param2=300)
-
-            # Add circle to list
-            if circles is not None:
-                circles = np.round(circles[0, :]).astype("int")
-                circles = circles[circles[:, 2].argsort()]
-                (x, y, r) = circles[-1]
-                centers = np.append(centers, np.array([[x, y, r]]), axis=0)
-
             ret, frame = cap.read()
+            if not ret: break
+            frames.append(frame)
+        cap.release()
+        # frames created
+
+        pool = mp.Pool()
+        centers = np.empty((0, 3), int)
+        #circles_per_frame = pool.starmap(find_circles_in_frame, ((frame, resize, minDist) for frame in frames))
+        circles_per_frame = [find_circles_in_frame(frame, resize, minDist) for frame in frames]
+
+        for (x, y, r) in circles_per_frame:
+            # Add circle to list
+            centers = np.append(centers, np.array([[x, y, r]]), axis=0)
 
         return np.median(centers, [0]).astype("int"), centers[centers[:, 2].argmin()]
 
