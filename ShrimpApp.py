@@ -1,12 +1,15 @@
 import tkinter as Tkinter
 from tkinter import filedialog
 
+from Circle_Detection.circle_crop import CircleCrop
+from SettingsSaver import SettingsSaver
 from main import main
 
 class FilePrompter(Tkinter.Tk):
 
-    def __init__(self, parent):
+    def __init__(self, parent, settings_saver:SettingsSaver):
         super().__init__(parent)
+        self.settings_saver = settings_saver
         self.parent = parent
         self.initialize()
 
@@ -87,6 +90,14 @@ class FilePrompter(Tkinter.Tk):
     def filename(self):
         return self.filename_entry_var.get()
 
+    def set_circle(self, circle):
+        if circle is not None:
+            print(circle)
+            x, y, r = circle
+            self.circle_entry_var1.set(x)
+            self.circle_entry_var2.set(y)
+            self.circle_entry_var3.set(r)
+
     @property
     def circle(self):
         x, y, r = self.circle_entry_var1.get(), self.circle_entry_var2.get(), self.circle_entry_var3.get()
@@ -109,6 +120,8 @@ class FilePrompter(Tkinter.Tk):
                               initialfile=self.filename_entry_var.get() if len(self.filename_entry_var.get()) > 0 else None)
         fl = dlg.show()
         self.filename_entry_var.set(fl)
+        circle, = self.settings_saver.read_from_cache(fl)
+        self.set_circle(circle)
 
     def onOKPressed(self):
         self.destroy()
@@ -119,9 +132,22 @@ class FilePrompter(Tkinter.Tk):
 
 
 if __name__ == "__main__":
-    app = FilePrompter(None)
+    resize = 0.7
+
+    settings = SettingsSaver()
+
+    app = FilePrompter(None, settings)
     app.title('Shrimp Tracker')
     app.mainloop()
     filename = app.filename
     circle = app.circle
-    main(filename, resize=0.7, circle=circle)
+
+    if circle is None:
+        # Detect circle
+        print("Looking for circle")
+        _, circle = CircleCrop.find_circle(filename, resize=resize)
+        print("Found circle.")
+        settings.add_to_cache(filename, circle)
+    print(circle)
+
+    main(filename, resize=resize, circle=circle)
