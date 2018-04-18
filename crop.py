@@ -13,7 +13,7 @@ class Crop(object):
         thickness = 4 * math.sqrt(shrimp.lambda2)
         cy = shrimp.cy
         cx = shrimp.cx
-        angle = shrimp.angle
+        angle = shrimp.angle + np.pi / 2            # FIXME
 
         p1 = np.array([cx + length / 2 * math.cos(angle), cy + length / 2 * math.sin(angle)])
         p2 = np.array([cx - length / 2 * math.sin(angle), cy - length / 2 * math.cos(angle)])

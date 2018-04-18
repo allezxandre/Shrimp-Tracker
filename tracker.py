@@ -1,13 +1,14 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
+from kalman_filter import KalmanFilter
 from kalman_filter_acceleration import KalmanFilterConstantAcceleration
 from tracer import Tracer
 
 
 class Shrimp:
     def __init__(self, prediction, id, tracer: Tracer):
-        self._KF = KalmanFilterConstantAcceleration(np.asarray(prediction))
+        self._KF = KalmanFilter(np.asarray(prediction))
         self.id = id
         self.skipped_frames = 0  # number of frames skipped undetected
         self.trace = []  # trace path
