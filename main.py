@@ -23,7 +23,7 @@ def resizeFrame(frame, resize):
     return cv2.resize(frame, (0, 0), fx=resize, fy=resize) if resize is not None else frame
 
 
-def main(filename, resize=None, circle=None):
+def main(filename, resize=None, circle=None, kalman=None):
     if len(filename) == 0:
         raise ValueError('Filename is empty')
 
@@ -37,7 +37,7 @@ def main(filename, resize=None, circle=None):
     cap = cv2.VideoCapture(filename)
 
     detector = Detector(minimum_area=100, maximum_area=500, debug=True)
-    tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5, tracer=TracerPlot())
+    tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5, kalman=kalman, tracer=TracerPlot())
 
     pause = True
 

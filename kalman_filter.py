@@ -13,7 +13,7 @@ class KalmanFilter(object):
     Reference: https://en.wikipedia.org/wiki/Kalman_filter
     """
 
-    def __init__(self, first_observation):
+    def __init__(self, first_observation, kalman_given):
         """
         Initialize variable used by Kalman Filter class
         """
@@ -24,7 +24,8 @@ class KalmanFilter(object):
 
         self.Q = np.diag((3.0, 3.0, np.math.pi / 6, 35., 30., 5., 5., 0.2))  # process noise matrix
         self.Q = self.Q ** 2
-        self.R = np.diag((3.0, 3.0, np.math.pi / 6, 10., 10, 5.))  # observation noise matrix
+
+        self.R = np.diag(kalman_given)  # observation noise matrix
 
         self.H = np.eye(6, 8)
 
