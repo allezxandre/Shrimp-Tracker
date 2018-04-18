@@ -1,8 +1,17 @@
 import pickle
 from os import path
 from pathlib import Path
+from typing import Optional
+
+
+class FilenameCache(object):
+    def __init__(self, filename):
+        self.filename = filename
+        self.circle = None
+        self.kalman = None
 
 class SettingsSaver(object):
+
 
     def __init__(self):
         from appdirs import AppDirs
@@ -33,13 +42,16 @@ class SettingsSaver(object):
             print('Cache does not exist')
             self.cache = {}
 
-    def add_to_cache(self, filename, kalman, circle):
-        self.cache[filename] = (kalman, None)
+    def add_to_cache(self, filename, kalman=None, circle=None):
+        if filename not in self.cache or (not isinstance(self.cache[filename], FilenameCache)):
+            self.cache[filename] = FilenameCache(filename)
+        if kalman is not None:
+            self.cache[filename].kalman = kalman
         if circle is not None:
-            self.cache[filename] = (kalman, circle)
+            self.cache[filename].circle = circle
         self.save_cache()
 
-    def read_from_cache(self, filename):
+    def read_from_cache(self, filename) -> Optional[FilenameCache]:
         if filename in self.cache:
             return self.cache[filename]
         else:

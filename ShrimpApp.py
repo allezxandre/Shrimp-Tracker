@@ -25,7 +25,6 @@ class FilePrompter(Tkinter.Tk):
         label7 = Tkinter.Label(self, text="Angle")
         label8 = Tkinter.Label(self, text="Lambda 1")
         label9 = Tkinter.Label(self, text="Lambda 2")
-        label10 = Tkinter.Label(self, text="Velocity")
 
         label1.grid(column=0, row=0, sticky='EW')
 
@@ -52,6 +51,7 @@ class FilePrompter(Tkinter.Tk):
         self.kalman_filter_lambda2_var = Tkinter.IntVar()
         self.kalman_filter_vel_var = Tkinter.IntVar()
 
+        # Circle
         label2.grid(column=0, row=1, sticky='EW')
         self.circle_entry1 = Tkinter.Entry(self, textvariable=self.circle_entry_var1)
         self.circle_entry1.grid(column=1, row=1, sticky='EW')
@@ -60,6 +60,8 @@ class FilePrompter(Tkinter.Tk):
         self.circle_entry3 = Tkinter.Entry(self, textvariable=self.circle_entry_var3)
         self.circle_entry3.grid(column=3, row=1, sticky='EW')
 
+        # Kalman
+        # (3.0, 3.0, np.math.pi / 6, 10., 10, 5.) is R
         label3.grid(column=0, row=2, sticky='EW')
         label4.grid(column=0, row=3, sticky='EW')
         self.kalman_filter_cx = Tkinter.Entry(self, textvariable=self.kalman_filter_cx_var)
@@ -79,9 +81,8 @@ class FilePrompter(Tkinter.Tk):
         label9.grid(column=2, row=5, sticky='EW')
         self.kalman_filter_lambda2 = Tkinter.Entry(self, textvariable=self.kalman_filter_lambda2_var)
         self.kalman_filter_lambda2.grid(column=3, row=5, sticky='EW')
-        label10.grid(column=0, row=6, sticky='EW')
-        self.kalman_filter_vel = Tkinter.Entry(self, textvariable=self.kalman_filter_vel_var)
-        self.kalman_filter_vel.grid(column=1, row=6, sticky='EW')
+        from numpy import pi
+        self.set_kalman((3.0, 3.0, pi / 6, 10., 10, 5.))
 
         self.grid_columnconfigure(0, weight=1)
         self.resizable(True, False)
@@ -100,14 +101,15 @@ class FilePrompter(Tkinter.Tk):
 
     def set_kalman(self, kalman):
         if kalman is not None:
-            cx, cy, area, angle, lambda1, lambda2, vel = kalman
+            cx, cy, area, angle, lambda1, lambda2 = kalman
             self.kalman_filter_cx_var.set(cx)
             self.kalman_filter_cy_var.set(cy)
             self.kalman_filter_area_var.set(area)
-            self.kalman_filter_angle_var.set(angle)
+            from numpy import rad2deg
+            angle_deg = rad2deg(angle)
+            self.kalman_filter_angle_var.set(angle_deg)
             self.kalman_filter_lambda1_var.set(lambda1)
             self.kalman_filter_lambda2_var.set(lambda2)
-            self.kalman_filter_vel_var.set(vel)
 
     @property
     def circle(self):
@@ -119,10 +121,12 @@ class FilePrompter(Tkinter.Tk):
 
     @property
     def kalman(self):
-        cx, cy, area, angle, lambda1, lambda2, vel = self.kalman_filter_cx_var.get(), self.kalman_filter_cy_var.get(), \
+        from numpy import deg2rad
+        cx, cy, area, angle_deg, lambda1, lambda2, vel = self.kalman_filter_cx_var.get(), self.kalman_filter_cy_var.get(), \
                                                     self.kalman_filter_area_var.get(), self.kalman_filter_angle_var.get(), \
                                                     self.kalman_filter_lambda1_var.get(), self.kalman_filter_lambda2_var.get(),\
                                                     self.kalman_filter_vel_var.get()
+        angle = deg2rad(angle_deg)
         return (cx, cy, area, angle, lambda1, lambda2, vel)
 
     def onOpen(self):
@@ -131,9 +135,9 @@ class FilePrompter(Tkinter.Tk):
                               initialfile=self.filename_entry_var.get() if len(self.filename_entry_var.get()) > 0 else None)
         fl = dlg.show()
         self.filename_entry_var.set(fl)
-        kalman, circle = self.settings_saver.read_from_cache(fl)
-        self.set_circle(circle)
-        self.set_kalman(kalman)
+        cache = self.settings_saver.read_from_cache(fl)
+        self.set_circle(cache.circle)
+        self.set_kalman(cache.kalman)
 
     def onOKPressed(self):
         self.destroy()
@@ -151,6 +155,8 @@ if __name__ == "__main__":
     app = FilePrompter(None, settings)
     app.title('Shrimp Tracker')
     app.mainloop()
+
+    # User pressed OK at this point
     filename = app.filename
     circle = app.circle
     kalman = app.kalman
@@ -160,8 +166,8 @@ if __name__ == "__main__":
         print("Looking for circle")
         _, circle = CircleCrop.find_circle(filename, resize=resize)
         print("Found circle.")
-        settings.add_to_cache(filename, circle)
+        settings.add_to_cache(filename, circle=circle)
 
-    #(3.0, 3.0, np.math.pi / 6, 10., 10, 5.) is R
+    settings.add_to_cache(filename, kalman=kalman)
 
     main(filename, resize=resize, circle=circle, kalman=kalman)
