@@ -33,9 +33,10 @@ class SettingsSaver(object):
             print('Cache does not exist')
             self.cache = {}
 
-    def add_to_cache(self, filename, circle):
+    def add_to_cache(self, filename, kalman, circle):
+        self.cache[filename] = (kalman, None)
         if circle is not None:
-            self.cache[filename] = (circle,)
+            self.cache[filename] = (kalman, circle)
         self.save_cache()
 
     def read_from_cache(self, filename):
