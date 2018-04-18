@@ -4,10 +4,11 @@ import numpy as np
 
 class Tracer(object):
 
-    def __init__(self):
+    def __init__(self, row_names):
         self.states = None
         self._state_dim = None
         self._current_row = None
+        self.row_names = row_names
 
     def _prepare_states(self, state_dim: int, forIndex: int):
         if self.states is None or self._state_dim is None:
@@ -69,7 +70,15 @@ class Tracer(object):
 
 class TracerCSV(Tracer):
     def write(self, minimum_length=10):
-        np.savetxt("states.csv", self.states, delimiter=",")
+        dim = self._state_dim
+        states_reworked = np.empty(self.states.shape, dtype=self.states.dtype).reshape((-1, dim))
+        last_row = 0
+        for trackIndex, nb_rows in enumerate(self._current_row):
+            begin, end = self._column_indices(trackIndex)
+            nb_rows = self._current_row[trackIndex]
+            states_reworked[last_row:last_row+nb_rows,:] = self.states[:nb_rows, begin:end]
+            last_row += nb_rows
+        np.savetxt("states.csv", states_reworked, delimiter=",", header=''.join(self.row_names))
 
 
 class TracerPlot(Tracer):

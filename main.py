@@ -8,7 +8,7 @@ from Circle_Detection.circle_crop import CircleCrop
 from TrackWindow import TrackWindow
 from crop import Crop
 from detector import Detector
-from tracer import TracerPlot
+from tracer import TracerPlot, TracerCSV
 from tracker import Tracker, CX, CY
 from utils import generate_color_set, side_by_side
 
@@ -36,8 +36,8 @@ def main(filename, resize=None, circle=None):
 
     cap = cv2.VideoCapture(filename)
 
-    detector = Detector(minimum_area=100, maximum_area=500, debug=True)
-    tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5, tracer=TracerPlot())
+    detector = Detector(minimum_area=100, maximum_area=500, debug=False)
+    tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5, tracer=TracerCSV())
 
     pause = True
 

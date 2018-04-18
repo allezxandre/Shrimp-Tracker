@@ -148,6 +148,5 @@ if __name__ == "__main__":
         _, circle = CircleCrop.find_circle(filename, resize=resize)
         print("Found circle.")
         settings.add_to_cache(filename, circle)
-    print(circle)
 
     main(filename, resize=resize, circle=circle)
