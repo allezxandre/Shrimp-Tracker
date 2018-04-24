@@ -76,8 +76,10 @@ class TracerCSV(Tracer):
         for trackIndex, nb_rows in enumerate(self._current_row):
             begin, end = self._column_indices(trackIndex)
             nb_rows = self._current_row[trackIndex]
-            states_reworked[last_row:last_row+nb_rows,:] = self.states[:nb_rows, begin:end]
+            if nb_rows > 0:
+                states_reworked[last_row:last_row+nb_rows,:] = self.states[:nb_rows, begin:end]
             last_row += nb_rows
+        header=None
         if self.row_names is not None:
             header = ''.join(self.row_names)
         np.savetxt("states.csv", states_reworked, delimiter=",", header=header)

@@ -7,8 +7,8 @@ from tracer import Tracer
 
 
 class Shrimp:
-    def __init__(self, prediction, id, tracer: Tracer, kalman):
-        self._KF = KalmanFilter(np.asarray(prediction), kalman)
+    def __init__(self, prediction, id, tracer: Tracer, observation_matrix):
+        self._KF = KalmanFilter(np.asarray(prediction), observation_matrix)
         self.id = id
         self.skipped_frames = 0  # number of frames skipped undetected
         self.trace = []  # trace path
@@ -99,7 +99,7 @@ class DecisionTree(object):
 
 class Tracker:
 
-    def __init__(self, dist_thresh, max_frames_to_skip, max_trace_length, kalman, tracer=Tracer()):
+    def __init__(self, dist_thresh, max_frames_to_skip, max_trace_length, observation_matrix, tracer=Tracer()):
         """
         Tracker object.
 
@@ -109,7 +109,7 @@ class Tracker:
                                     the track object undetected
         :param max_trace_length: trace path history length
         """
-        self.kalman=kalman
+        self.observation_matrix=observation_matrix
         self.dist_thresh = dist_thresh
         self.max_frames_to_skip = max_frames_to_skip
         self.max_trace_length = max_trace_length
@@ -128,7 +128,7 @@ class Tracker:
         # Create tracks if no tracks vector found
         if (len(self.tracks) == 0):
             for i in range(len(vectors)):
-                track = Shrimp(vectors[i], self.trackIdCount, tracer=self.tracer, kalman=self.kalman)
+                track = Shrimp(vectors[i], self.trackIdCount, tracer=self.tracer, observation_matrix=self.observation_matrix)
                 self.trackIdCount += 1
                 self.tracks.append(track)
 
@@ -187,7 +187,7 @@ class Tracker:
         if (len(un_assigned_detects) != 0):
             for i in range(len(un_assigned_detects)):
                 track = Shrimp(vectors[un_assigned_detects[i]],
-                               self.trackIdCount, tracer=self.tracer)
+                               self.trackIdCount, tracer=self.tracer, observation_matrix=self.observation_matrix)
                 self.trackIdCount += 1
                 self.tracks.append(track)
 

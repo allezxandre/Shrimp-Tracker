@@ -10,8 +10,8 @@ class FilenameCache(object):
         self.circle = None
         self.kalman = None
 
-class SettingsSaver(object):
 
+class SettingsSaver(object):
 
     def __init__(self):
         from appdirs import AppDirs
@@ -20,7 +20,6 @@ class SettingsSaver(object):
         self.data_dir = app_dirs.user_data_dir
         self.cache = {}
         self.__load_cache()
-
 
     def __assert_exists(self):
         for directory in [self.cache_dir, self.data_dir]:
@@ -52,10 +51,9 @@ class SettingsSaver(object):
         self.save_cache()
 
     def read_from_cache(self, filename) -> Optional[FilenameCache]:
-        if filename in self.cache:
-            return self.cache[filename]
-        else:
-            return None
+        if filename not in self.cache:
+            self.cache[filename] = FilenameCache(filename)
+        return self.cache[filename]
 
     def save_cache(self):
         self.__assert_exists()
