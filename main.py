@@ -4,11 +4,12 @@ import cv2
 import numpy as np
 
 from Circle_Detection.circle_crop import CircleCrop
+from Shrimp import CX, CY
 from TrackWindow import TrackWindow
 from crop import Crop
 from detector import Detector
 from tracer import TracerCSV
-from tracker import Tracker, CX, CY
+from tracker import Tracker
 from utils import generate_color_set, side_by_side
 
 PAUSE_KEY = ord(u'\r')
@@ -61,33 +62,33 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
         orig_frame = copy.copy(frame)
         frame = CircleCrop.value_around_circle(frame)
 
-        vectors = detector.detect(frame)
+        contours = detector.detect(frame)
 
-        tracker.update(vectors)
+        tracker.update(contours)
 
         # Display the original frame
         if DISPLAY_ORIGINAL: cv2.imshow('Original', uncropped_frame)
 
-        for i in range(len(tracker.tracks)):
-            shrimp = tracker.tracks[i]
+        for shrimp in tracker.tracks:
             color = colors[shrimp.id % len(colors)] + (1.0 / (1 + shrimp.skipped_frames),)
-            if (len(tracker.tracks[i].trace) > 1):
-                for j in range(len(tracker.tracks[i].trace) - 1):
+            trace = shrimp.trace(5)
+            if (len(trace) > 1):
+                for j in range(trace.shape[0] - 1):
                     # Draw trace line
-                    x1 = tracker.tracks[i].trace[j][CX]
-                    y1 = tracker.tracks[i].trace[j][CY]
-                    x2 = tracker.tracks[i].trace[j + 1][CX]
-                    y2 = tracker.tracks[i].trace[j + 1][CY]
+                    x1 = trace.iloc[j, CX]
+                    y1 = trace.iloc[j, CY]
+                    x2 = trace.iloc[j + 1, CX]
+                    y2 = trace.iloc[j + 1, CY]
                     cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
 
             # Display the resulting tracking frame
-            cropped, rect = Crop.crop_around_shrimp(copy.copy(orig_frame), tracker.tracks[i])
+            cropped, rect = Crop.crop_around_shrimp(copy.copy(orig_frame), shrimp)
             box = cv2.boxPoints(rect)
             box = np.int0(box)
             cv2.drawContours(frame, [box], 0, color, 2)
             cv2.ellipse(frame, center=shrimp.center, axes=shrimp.accuracy(), angle=0, startAngle=0, endAngle=360,
                         color=color)
-            tracks_window.update_shrimp(cropped, tracker.tracks[i].id, color)
+            tracks_window.update_shrimp(cropped, shrimp.id, color)
 
         tracking_image = tracks_window.image(height=frame.shape[0])
         if tracking_image is None:
@@ -115,6 +116,6 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
                     break
         if k == ESC_KEY:  # 'esc' key has been pressed, exit program.
             break
-    tracker.tracer.write()
+    tracker.write()
     cv2.destroyAllWindows()
     cap.release()

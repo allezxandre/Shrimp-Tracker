@@ -51,6 +51,10 @@ class KalmanFilter(object):
     def state(self):
         return self.x
 
+    @property
+    def uncertainty(self):
+        return np.diag(self.P)
+
     def predict(self):
         F = self.F
         self.x = np.asarray(F @ self.x)

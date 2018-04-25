@@ -117,6 +117,36 @@ class FilePrompter(Tkinter.Tk):
     def filename(self):
         return self.filename_entry_var.get()
 
+    @property
+    def circle(self):
+        try:
+            x, y, r = self.circle_entry_var1.get(), self.circle_entry_var2.get(), self.circle_entry_var3.get()
+        except:
+            return None
+        else:
+            if r < x and r < y and r > 0:
+                return (x, y, r)
+            else:
+                return None
+
+    @property
+    def kalman(self):
+        from numpy import deg2rad, diag
+        cx, cy, angle_deg, area, lambda1, lambda2 = self.kalman_filter_cx_var.get(), self.kalman_filter_cy_var.get(), \
+                                                    self.kalman_filter_angle_var.get(), self.kalman_filter_area_var.get(), \
+                                                    self.kalman_filter_lambda1_var.get(), self.kalman_filter_lambda2_var.get()
+        angle = deg2rad(angle_deg)
+        return diag([cx, cy, angle, area, lambda1, lambda2])
+
+    @property
+    def csv_filename(self):
+        filename = self.output_csv_filename_var.get()
+        if len(filename) == 0: return None
+        # Check extension
+        if not filename.lower().endswith('.csv'):
+            filename += '.csv'
+        return filename
+
     def set_circle(self, circle):
         if circle is not None:
             x, y, r = circle
@@ -143,27 +173,6 @@ class FilePrompter(Tkinter.Tk):
             self.kalman_filter_angle_var.set(angle_deg)
             self.kalman_filter_lambda1_var.set(lambda1)
             self.kalman_filter_lambda2_var.set(lambda2)
-
-    @property
-    def circle(self):
-        try:
-            x, y, r = self.circle_entry_var1.get(), self.circle_entry_var2.get(), self.circle_entry_var3.get()
-        except:
-            return None
-        else:
-            if r < x and r < y and r > 0:
-                return (x, y, r)
-            else:
-                return None
-
-    @property
-    def kalman(self):
-        from numpy import deg2rad, diag
-        cx, cy, angle_deg, area, lambda1, lambda2 = self.kalman_filter_cx_var.get(), self.kalman_filter_cy_var.get(), \
-                                                    self.kalman_filter_angle_var.get(), self.kalman_filter_area_var.get(), \
-                                                    self.kalman_filter_lambda1_var.get(), self.kalman_filter_lambda2_var.get()
-        angle = deg2rad(angle_deg)
-        return diag([cx, cy, angle, area, lambda1, lambda2])
 
     def onOpen(self):
         ftypes = (('Video files', '*.avi *.mp4 *.mpeg'), ('All files', '*'))
@@ -202,6 +211,7 @@ if __name__ == "__main__":
     circle = app.circle
     kalman = app.kalman
     if kalman is None: exit(EXIT_CODE_INVALID_KALMAN)
+    output_CSV_name = app.csv_filename
 
     if circle is None:
         # Detect circle
@@ -212,4 +222,4 @@ if __name__ == "__main__":
     settings.add_to_cache(filename, circle=circle)
     settings.add_to_cache(filename, kalman=kalman)
 
-    main(filename, resize=resize, circle=circle, kalman=kalman)
+    main(filename, resize=resize, circle=circle, kalman=kalman, output_CSV_name=output_CSV_name)

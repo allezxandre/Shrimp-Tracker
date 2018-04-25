@@ -171,3 +171,10 @@ venv.bak/
 
 .idea/Shrimp-Tracker.iml
 .idea/misc.xml
+*.csv
+*.xls
+*.xlsx
+*.jpg
+*.tiff
+*.mp4
+*.avi
