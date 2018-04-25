@@ -28,7 +28,7 @@ class Shrimp:
 
     def save(self):
         trace, idx = self.__trace_from_state()
-        self._trace = self._trace.append(pd.DataFrame(trace, index=[idx]))
+        self._trace.loc[idx, trace.keys()] = list(trace.values())
         pass
 
     def __trace_from_state(self):
