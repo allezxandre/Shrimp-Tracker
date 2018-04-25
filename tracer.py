@@ -69,7 +69,12 @@ class Tracer(object):
 
 
 class TracerCSV(Tracer):
+    def __init__(self, row_names=None, output_CSV_path=None):
+        super().__init__(row_names)
+        self.output_CSV_path = output_CSV_path
+
     def write(self, minimum_length=10):
+        if self.output_CSV_path is None: return
         dim = self._state_dim
         states_reworked = np.empty(self.states.shape, dtype=self.states.dtype).reshape((-1, dim))
         last_row = 0
@@ -82,7 +87,7 @@ class TracerCSV(Tracer):
         header=None
         if self.row_names is not None:
             header = ''.join(self.row_names)
-        np.savetxt("states.csv", states_reworked, delimiter=",", header=header)
+        np.savetxt(self.output_CSV_path, states_reworked, delimiter=",", header=header)
 
 
 class TracerPlot(Tracer):

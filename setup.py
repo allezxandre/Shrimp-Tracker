@@ -16,7 +16,7 @@ setup(
     version='1.0',
     options={"build_exe":
         {
-            "packages": ["tkinter", "appdirs", "matplotlib", "numpy", "cv2", "scipy"],
+            "packages": ["threading", "tkinter", "appdirs", "matplotlib", "numpy", "cv2", "scipy"],
             "include_files": [
                 PYTHON_PATH + r"\DLLs\tcl86t.dll",
                 PYTHON_PATH + r"\DLLs\tk86t.dll",

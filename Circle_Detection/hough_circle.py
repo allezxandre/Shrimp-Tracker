@@ -57,20 +57,24 @@ def hough_circle(input='../Resources/clip6.mp4'):
     cv2.destroyAllWindows()
 
 
-def find_circle(input='../Resources/clip6.mp4', minDist=350, resize=None):
+def find_circle(input, minDist=350, resize=None, progress_func=None):
     """
     Goes through all the frames of the input video to find
     the biggest circles. Returns the median and the minimum of these
     circles.
     """
     cap = cv2.VideoCapture(input)
+    nb_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     centers = np.empty((0, 3), int)
-
     ret, frame = cap.read()
+    frame_idx = 1
     while ret:
         if resize is not None:
             frame = cv2.resize(frame, (0, 0), fx=resize, fy=resize)
+
+        if progress_func is not None:
+            progress_func(frame_idx, nb_frames)
 
         # convert to greyscale
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -85,10 +89,9 @@ def find_circle(input='../Resources/clip6.mp4', minDist=350, resize=None):
             (x, y, r) = circles[-1]
             centers = np.append(centers, np.array([[x, y, r]]), axis=0)
 
+        del frame, circles # Free memory
+
         ret, frame = cap.read()
+        frame_idx += 1
 
     return np.median(centers, [0]).astype("int"), centers[centers[:, 2].argmin()]
-
-
-if __name__ == '__main__':
-    hough_circle()

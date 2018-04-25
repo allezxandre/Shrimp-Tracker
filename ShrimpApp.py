@@ -1,10 +1,12 @@
 import tkinter as Tkinter
 from tkinter import filedialog
 
+from Circle_Detection.CircleDetectorApp import detectCircle
 from Circle_Detection.circle_crop import CircleCrop
 from SettingsSaver import SettingsSaver
 from main import main
 
+EXIT_CODE_NO_FILENAME_PROVIDED = 5
 
 class FilePrompter(Tkinter.Tk):
 
@@ -146,7 +148,7 @@ class FilePrompter(Tkinter.Tk):
         return diag([cx, cy, angle, area, lambda1, lambda2])
 
     def onOpen(self):
-        ftypes = [('AVI files', '*.avi'), ('MP4 files', '*.mp4'), ('All files', '*')]
+        ftypes = [('Video files', '*.avi;*.mp4;*.mpeg'), ('All files', '*')]
         dlg = filedialog.Open(self, filetypes=ftypes,
                               initialfile=self.filename_entry_var.get() if len(
                                   self.filename_entry_var.get()) > 0 else None)
@@ -175,16 +177,16 @@ if __name__ == "__main__":
 
     # User pressed OK at this point
     filename = app.filename
+    if len(filename) == 0: exit(EXIT_CODE_NO_FILENAME_PROVIDED)
     circle = app.circle
     kalman = app.kalman
 
     if circle is None:
         # Detect circle
-        print("Looking for circle")
-        _, circle = CircleCrop.find_circle(filename, resize=resize)
-        print("Found circle.")
-        settings.add_to_cache(filename, circle=circle)
+        circle = detectCircle(filename, resize=resize)
 
+    # Save settings to cache
+    settings.add_to_cache(filename, circle=circle)
     settings.add_to_cache(filename, kalman=kalman)
 
     main(filename, resize=resize, circle=circle, kalman=kalman)

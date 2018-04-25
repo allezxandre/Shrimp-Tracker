@@ -2,7 +2,6 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 from kalman_filter import KalmanFilter
-from kalman_filter_acceleration import KalmanFilterConstantAcceleration
 from tracer import Tracer
 
 

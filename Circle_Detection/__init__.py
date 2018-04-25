@@ -1,1 +1,1 @@
-from . import circle_crop, hough_circle
+from . import circle_crop, hough_circle, CircleDetectorApp
