@@ -1,4 +1,5 @@
 import tkinter as Tkinter
+from os import path
 from tkinter import filedialog
 
 from Circle_Detection.CircleDetectorApp import detectCircle
@@ -9,6 +10,7 @@ EXIT_CODE_NO_FILENAME_PROVIDED = 5
 EXIT_CODE_CIRCLE_NOT_FOUND = 6
 EXIT_CODE_INVALID_KALMAN = 7
 
+DEFAULT_CSV_NAME = "output.csv"
 
 class FilePrompter(Tkinter.Tk):
 
@@ -43,7 +45,7 @@ class FilePrompter(Tkinter.Tk):
         label_CSV_filename.grid(column=0, row=1, sticky='EW')
         self.output_csv_filename_var = Tkinter.StringVar()
         self.output_csv_filename_entry = Tkinter.Entry(self, textvariable=self.output_csv_filename_var)
-        self.output_csv_filename_var.set("output.csv")
+        self.output_csv_filename_var.set(DEFAULT_CSV_NAME)
         self.output_csv_filename_entry.grid(column=1, columnspan=3, row=1, sticky='EW')
 
         button_open = Tkinter.Button(self, text="Open...", command=self.onOpen)
@@ -114,7 +116,7 @@ class FilePrompter(Tkinter.Tk):
         self.set_kalman(diag([3.0, 3.0, pi / 6, 10., 10., 5.]))
 
     @property
-    def filename(self):
+    def video_filename(self):
         return self.filename_entry_var.get()
 
     @property
@@ -141,11 +143,20 @@ class FilePrompter(Tkinter.Tk):
     @property
     def csv_filename(self):
         filename = self.output_csv_filename_var.get()
+        directory, filename = path.split(filename)
         if len(filename) == 0: return None
+        # Check directory
+        if len(directory) == 0:
+            directory = path.dirname(self.video_filename)
         # Check extension
-        if not filename.lower().endswith('.csv'):
-            filename += '.csv'
-        return filename
+        filename, ext = path.splitext(filename)
+        if len(ext) == 0:
+            ext = ".csv"
+        else:
+            if ext != ".csv":
+                ext += ".csv"
+        # Construct full path
+        return path.join(directory, filename + ext)
 
     def set_circle(self, circle):
         if circle is not None:
@@ -176,14 +187,16 @@ class FilePrompter(Tkinter.Tk):
 
     def onOpen(self):
         ftypes = (('Video files', '*.avi *.mp4 *.mpeg'), ('All files', '*'))
-        # dlg = filedialog.Open()
         fl = filedialog.askopenfilename(
             title="Choose a Shrimp-Video",
             filetypes=ftypes,
             initialfile=self.filename_entry_var.get() if len(
                 self.filename_entry_var.get()) > 0 else None)
-        # fl = dlg.show()
         self.filename_entry_var.set(fl)
+        csv_out = self.output_csv_filename_var.get()
+        if len(fl) > 0 and (len(csv_out) == 0 or csv_out.endswith(DEFAULT_CSV_NAME)):
+            basename, _ = path.splitext(path.basename(fl))
+            self.output_csv_filename_var.set('{}-{}'.format(basename, DEFAULT_CSV_NAME))
         cache = self.settings_saver.read_from_cache(fl)
         self.set_circle(cache.circle)
         self.set_kalman(cache.kalman)
@@ -206,7 +219,7 @@ if __name__ == "__main__":
     app.mainloop()
 
     # User pressed OK at this point
-    filename = app.filename
+    filename = app.video_filename
     if len(filename) == 0: exit(EXIT_CODE_NO_FILENAME_PROVIDED)
     circle = app.circle
     kalman = app.kalman
