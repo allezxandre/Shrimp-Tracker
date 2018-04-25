@@ -2,11 +2,13 @@ import tkinter as Tkinter
 from tkinter import filedialog
 
 from Circle_Detection.CircleDetectorApp import detectCircle
-from Circle_Detection.circle_crop import CircleCrop
 from SettingsSaver import SettingsSaver
 from main import main
 
 EXIT_CODE_NO_FILENAME_PROVIDED = 5
+EXIT_CODE_CIRCLE_NOT_FOUND = 6
+EXIT_CODE_INVALID_KALMAN = 7
+
 
 class FilePrompter(Tkinter.Tk):
 
@@ -33,15 +35,22 @@ class FilePrompter(Tkinter.Tk):
 
         self.filename_entry_var = Tkinter.StringVar()
         self.filename_entry = Tkinter.Entry(self, textvariable=self.filename_entry_var)
-        self.filename_entry.grid(column=1, columnspan=2, row=0, sticky='EW')
+        self.filename_entry.grid(column=1, columnspan=3, row=0, sticky='EW')
         self.filename_entry.bind("<Return>", self.onOKPressed)
         self.filename_entry_var.set("")
 
+        label_CSV_filename = Tkinter.Label(self, text="CSV Output")
+        label_CSV_filename.grid(column=0, row=1, sticky='EW')
+        self.output_csv_filename_var = Tkinter.StringVar()
+        self.output_csv_filename_entry = Tkinter.Entry(self, textvariable=self.output_csv_filename_var)
+        self.output_csv_filename_var.set("output.csv")
+        self.output_csv_filename_entry.grid(column=1, columnspan=3, row=1, sticky='EW')
+
         button_open = Tkinter.Button(self, text="Open...", command=self.onOpen)
-        button_open.grid(column=3, row=0)
+        button_open.grid(column=4, row=0)
 
         buttonOK = Tkinter.Button(self, text="OK", command=self.onOKPressed)
-        buttonOK.grid(column=3, row=6)
+        buttonOK.grid(column=3, columnspan=2, row=7)
 
         self.circle_entry_var1 = Tkinter.IntVar()
         self.circle_entry_var2 = Tkinter.IntVar()
@@ -55,34 +64,38 @@ class FilePrompter(Tkinter.Tk):
         self.kalman_filter_vel_var = Tkinter.DoubleVar()
 
         # Circle
-        label2.grid(column=0, row=1, sticky='EW')
+        label2.grid(column=0, row=2, sticky='EW')
         self.circle_entry1 = Tkinter.Entry(self, textvariable=self.circle_entry_var1)
-        self.circle_entry1.grid(column=1, row=1, sticky='EW')
+        self.circle_entry1.grid(column=1, row=2, sticky='EW')
         self.circle_entry2 = Tkinter.Entry(self, textvariable=self.circle_entry_var2)
-        self.circle_entry2.grid(column=2, row=1, sticky='EW')
+        self.circle_entry2.grid(column=2, row=2, sticky='EW')
         self.circle_entry3 = Tkinter.Entry(self, textvariable=self.circle_entry_var3)
-        self.circle_entry3.grid(column=3, row=1, sticky='EW')
+        self.circle_entry3.grid(column=3, row=2, sticky='EW')
+        button_open = Tkinter.Button(self, text="Clear", command=self.reset_circle)
+        button_open.grid(column=4, row=2)
 
         # Kalman
-        label3.grid(column=0, row=2, sticky='EW')
-        label4.grid(column=0, row=3, sticky='EW')
+        label3.grid(column=0, row=3, sticky='EW')
+        label4.grid(column=0, row=4, sticky='EW')
         self.kalman_filter_cx = Tkinter.Entry(self, textvariable=self.kalman_filter_cx_var)
-        self.kalman_filter_cx.grid(column=1, row=3, sticky='EW')
-        label5.grid(column=2, row=3, sticky='EW')
+        self.kalman_filter_cx.grid(column=1, row=4, sticky='EW')
+        label5.grid(column=2, row=4, sticky='EW')
         self.kalman_filter_cy = Tkinter.Entry(self, textvariable=self.kalman_filter_cy_var)
-        self.kalman_filter_cy.grid(column=3, row=3, sticky='EW')
-        label6.grid(column=0, row=4, sticky='EW')
+        self.kalman_filter_cy.grid(column=3, row=4, sticky='EW')
+        label6.grid(column=0, row=5, sticky='EW')
         self.kalman_filter_angle = Tkinter.Entry(self, textvariable=self.kalman_filter_angle_var)
-        self.kalman_filter_angle.grid(column=1, row=4, sticky='EW')
-        label7.grid(column=2, row=4, sticky='EW')
+        self.kalman_filter_angle.grid(column=1, row=5, sticky='EW')
+        label7.grid(column=2, row=5, sticky='EW')
         self.kalman_filter_area = Tkinter.Entry(self, textvariable=self.kalman_filter_area_var)
-        self.kalman_filter_area.grid(column=3, row=4, sticky='EW')
-        label8.grid(column=0, row=5, sticky='EW')
+        self.kalman_filter_area.grid(column=3, row=5, sticky='EW')
+        label8.grid(column=0, row=6, sticky='EW')
         self.kalman_filter_lambda1 = Tkinter.Entry(self, textvariable=self.kalman_filter_lambda1_var)
-        self.kalman_filter_lambda1.grid(column=1, row=5, sticky='EW')
-        label9.grid(column=2, row=5, sticky='EW')
+        self.kalman_filter_lambda1.grid(column=1, row=6, sticky='EW')
+        label9.grid(column=2, row=6, sticky='EW')
         self.kalman_filter_lambda2 = Tkinter.Entry(self, textvariable=self.kalman_filter_lambda2_var)
-        self.kalman_filter_lambda2.grid(column=3, row=5, sticky='EW')
+        self.kalman_filter_lambda2.grid(column=3, row=6, sticky='EW')
+        button_open = Tkinter.Button(self, text="Reset", command=self.reset_kalman)
+        button_open.grid(column=4, row=5)
 
         self.grid_columnconfigure(0, weight=1)
         self.resizable(True, False)
@@ -90,7 +103,13 @@ class FilePrompter(Tkinter.Tk):
         self.input_defaults()
 
     def input_defaults(self):
+        self.reset_circle()
+        self.reset_kalman()
+
+    def reset_circle(self):
         self.set_circle(None)
+
+    def reset_kalman(self):
         from numpy import diag, pi
         self.set_kalman(diag([3.0, 3.0, pi / 6, 10., 10., 5.]))
 
@@ -100,7 +119,6 @@ class FilePrompter(Tkinter.Tk):
 
     def set_circle(self, circle):
         if circle is not None:
-            print(circle)
             x, y, r = circle
             self.circle_entry_var1.set(x)
             self.circle_entry_var2.set(y)
@@ -148,17 +166,20 @@ class FilePrompter(Tkinter.Tk):
         return diag([cx, cy, angle, area, lambda1, lambda2])
 
     def onOpen(self):
-        ftypes = [('Video files', '*.avi;*.mp4;*.mpeg'), ('All files', '*')]
-        dlg = filedialog.Open(self, filetypes=ftypes,
-                              initialfile=self.filename_entry_var.get() if len(
-                                  self.filename_entry_var.get()) > 0 else None)
-        fl = dlg.show()
+        ftypes = (('Video files', '*.avi *.mp4 *.mpeg'), ('All files', '*'))
+        # dlg = filedialog.Open()
+        fl = filedialog.askopenfilename(
+            title="Choose a Shrimp-Video",
+            filetypes=ftypes,
+            initialfile=self.filename_entry_var.get() if len(
+                self.filename_entry_var.get()) > 0 else None)
+        # fl = dlg.show()
         self.filename_entry_var.set(fl)
         cache = self.settings_saver.read_from_cache(fl)
         self.set_circle(cache.circle)
         self.set_kalman(cache.kalman)
 
-    def onOKPressed(self):
+    def onOKPressed(self, *args):
         self.destroy()
 
     def validate_filepath(self):
@@ -180,10 +201,12 @@ if __name__ == "__main__":
     if len(filename) == 0: exit(EXIT_CODE_NO_FILENAME_PROVIDED)
     circle = app.circle
     kalman = app.kalman
+    if kalman is None: exit(EXIT_CODE_INVALID_KALMAN)
 
     if circle is None:
         # Detect circle
         circle = detectCircle(filename, resize=resize)
+        if circle is None: exit(EXIT_CODE_CIRCLE_NOT_FOUND)
 
     # Save settings to cache
     settings.add_to_cache(filename, circle=circle)

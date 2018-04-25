@@ -1,5 +1,4 @@
 import copy
-import time
 
 import cv2
 import numpy as np
@@ -8,12 +7,12 @@ from Circle_Detection.circle_crop import CircleCrop
 from TrackWindow import TrackWindow
 from crop import Crop
 from detector import Detector
-from tracer import TracerPlot, TracerCSV
+from tracer import TracerCSV
 from tracker import Tracker, CX, CY
 from utils import generate_color_set, side_by_side
 
-PAUSE_KEY = ord('p')
-FRAME_BY_FRAME_KEY = ord(' ')
+PAUSE_KEY = ord(u'\r')
+FRAME_BY_FRAME_KEY = ord(u' ')
 ESC_KEY = 27
 
 DISPLAY_ORIGINAL = True
@@ -23,16 +22,12 @@ def resizeFrame(frame, resize):
     return cv2.resize(frame, (0, 0), fx=resize, fy=resize) if resize is not None else frame
 
 
-def main(filename, resize=None, circle=None, kalman=None, output_CSV_name=None):
+def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
     if len(filename) == 0:
         raise ValueError('Filename is empty')
 
-    if circle is None:
-        # Detect circle
-        print("Looking for circle")
-        _, circle = CircleCrop.find_circle(filename, resize=resize)
-        print("Found circle.")
-    print(circle)
+    if circle is None or len(circle) != 3:
+        raise ValueError('Circle is invalid.')
 
     cap = cv2.VideoCapture(filename)
 
@@ -65,7 +60,6 @@ def main(filename, resize=None, circle=None, kalman=None, output_CSV_name=None):
         # Make copy of original frame
         orig_frame = copy.copy(frame)
         frame = CircleCrop.value_around_circle(frame)
-
 
         vectors = detector.detect(frame)
 
@@ -124,8 +118,3 @@ def main(filename, resize=None, circle=None, kalman=None, output_CSV_name=None):
     tracker.tracer.write()
     cv2.destroyAllWindows()
     cap.release()
-
-if __name__ == '__main__':
-    # main(filename='../Resources/clip2.mp4', resize=0.7, circle=(667, 377, 274))
-    main(filename='/Users/alexandre/PycharmProjects/OpenCV-Experiments/Resources/clip6.mp4', resize=0.7, circle=(703, 361, 325))
-    #CircleCrop.find_circle('/Users/alexandre/PycharmProjects/OpenCV-Experiments/Resources/clip6.mp4',resize=0.7)
