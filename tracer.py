@@ -4,7 +4,8 @@ import pandas as pd
 class Tracer(object):
 
     def __init__(self):
-        self.trace: pd.DataFrame = None
+        #self.trace: pd.DataFrame = None
+        self.trace = None
 
     def add(self, trace: pd.DataFrame):
         if self.trace is None:

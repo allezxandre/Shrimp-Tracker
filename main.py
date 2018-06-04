@@ -31,6 +31,8 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
         raise ValueError('Circle is invalid.')
 
     cap = cv2.VideoCapture(filename)
+    avi = None
+
 
     detector = Detector(minimum_area=100, maximum_area=500, debug=False)
     tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5, observation_matrix=kalman,
@@ -83,14 +85,21 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
 
             # Display the resulting tracking frame
             cropped, rect = Crop.crop_around_shrimp(copy.copy(orig_frame), shrimp)
+            size = rect[1][0]*rect[1][1]
+            accuracy = shrimp.accuracy()
             box = cv2.boxPoints(rect)
             box = np.int0(box)
-            cv2.drawContours(frame, [box], 0, color, 2)
-            cv2.ellipse(frame, center=shrimp.center, axes=shrimp.accuracy(), angle=0, startAngle=0, endAngle=360,
+            if accuracy[0]*accuracy[1] < size:
+                cv2.drawContours(frame, [box], 0, color, 2)
+                cv2.ellipse(frame, center=shrimp.center, axes=accuracy, angle=0, startAngle=0, endAngle=360,
                         color=color)
-            tracks_window.update_shrimp(cropped, shrimp.id, color)
+                tracks_window.update_shrimp(cropped, shrimp.id, color)
 
         tracking_image = tracks_window.image(height=frame.shape[0])
+        if avi is None:
+            print(frame.shape)
+            avi = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, frame.shape[0:2])
+        avi.write(frame)
         if tracking_image is None:
             cv2.imshow('Tracking', frame)
         else:
@@ -119,3 +128,5 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
     tracker.write()
     cv2.destroyAllWindows()
     cap.release()
+    if not avi is None:
+        avi.release()
