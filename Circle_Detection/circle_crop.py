@@ -29,12 +29,14 @@ class CircleCrop:
     @staticmethod
     def value_around_circle(frame: np.ndarray, value=0, circle=None):
         if circle is None:
-            cx, cy, radius = frame.shape[0] // 2, frame.shape[1] // 2, frame.shape[1] // 2
+            cx, cy, radius = frame.shape[0] // 2, frame.shape[1] // 2, frame.shape[1] // 2 - 2
         else:
             cx, cy, radius = circle
-        new_frame = np.full(frame.shape[:3], value, dtype=frame.dtype)
         y, x = np.ogrid[0:frame.shape[0], 0:frame.shape[1]]
         index = (x - cx) ** 2 + (y - cy) ** 2 <= radius ** 2
+        if value is None:
+            value = np.mean(frame[index])
+        new_frame = np.full(frame.shape[:3], value, dtype=frame.dtype)
         new_frame[index] = frame[index]
         return new_frame
 
@@ -68,7 +70,7 @@ class CircleCrop:
             centers = np.append(centers, np.array([[x, y, r]]), axis=0)
 
             frame = CircleCrop.crop_circle(frame, circle)
-            frame = CircleCrop.value_around_circle(frame)
+            frame = CircleCrop.value_around_circle(frame, None)
 
             cv2.imshow(winname="Final result", mat=frame)
             cv2.waitKey(1)

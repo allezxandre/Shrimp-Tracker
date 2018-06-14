@@ -2,6 +2,7 @@ import copy
 
 import cv2
 import numpy as np
+import os.path
 
 from Circle_Detection.circle_crop import CircleCrop
 from Shrimp import CX, CY
@@ -16,7 +17,7 @@ PAUSE_KEY = ord(u'\r')
 FRAME_BY_FRAME_KEY = ord(u' ')
 ESC_KEY = 27
 
-DISPLAY_ORIGINAL = True
+DISPLAY_ORIGINAL = False
 
 
 def resizeFrame(frame, resize):
@@ -30,11 +31,10 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
     if circle is None or len(circle) != 3:
         raise ValueError('Circle is invalid.')
 
-    cap = cv2.VideoCapture(filename)
     avi = None
 
 
-    detector = Detector(minimum_area=100, maximum_area=500, debug=False)
+    detector = Detector(minimum_area=100, maximum_area=600, debug=False)
     tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5, observation_matrix=kalman,
                       tracer=TracerCSV(output_CSV_path=output_CSV_name))
 
@@ -48,6 +48,25 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
     import random
     random.shuffle(colors)
 
+    # First build a mask of static pixels
+    cap = cv2.VideoCapture(filename)
+    detector.reset_mask()
+    frame_count = 0
+    while True:
+        # Capture frame-by-frame (and resize)
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame = resizeFrame(frame, resize)
+        # Crop to the circle and add black pixels
+        frame = CircleCrop.crop_circle(frame, circle)
+        # Make copy of original frame
+        frame = CircleCrop.value_around_circle(frame, None)
+        detector.update_mask(frame)
+        frame_count += 1
+    detector.finalize_mask(max(1,(10*frame_count)/100))
+
+    cap = cv2.VideoCapture(filename)
     while True:
         tracks_window.reset()
         # Capture frame-by-frame (and resize)
@@ -62,14 +81,16 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
 
         # Make copy of original frame
         orig_frame = copy.copy(frame)
-        frame = CircleCrop.value_around_circle(frame)
+        frame = CircleCrop.value_around_circle(frame, None)
 
         contours = detector.detect(frame)
 
         tracker.update(contours)
 
         # Display the original frame
-        if DISPLAY_ORIGINAL: cv2.imshow('Original', uncropped_frame)
+        if DISPLAY_ORIGINAL: 
+            cv2.circle(uncropped_frame,(circle[0],circle[1]),circle[2],(0,0,255), 3)
+            cv2.imshow('Original', uncropped_frame)
 
         for shrimp in tracker.tracks:
             color = colors[shrimp.id % len(colors)] + (1.0 / (1 + shrimp.skipped_frames),)
@@ -97,8 +118,8 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
 
         tracking_image = tracks_window.image(height=frame.shape[0])
         if avi is None:
-            print(frame.shape)
-            avi = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, frame.shape[0:2])
+            fileout,ext=os.path.splitext(filename)
+            avi = cv2.VideoWriter(fileout+"_output.avi", cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, frame.shape[0:2])
         avi.write(frame)
         if tracking_image is None:
             cv2.imshow('Tracking', frame)
@@ -125,6 +146,7 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
                     break
         if k == ESC_KEY:  # 'esc' key has been pressed, exit program.
             break
+    print("Shrimp tracking completed")
     tracker.write()
     cv2.destroyAllWindows()
     cap.release()
