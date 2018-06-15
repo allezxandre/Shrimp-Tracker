@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import sys
 import tkinter as Tkinter
 from os import path
 from tkinter import filedialog
@@ -41,14 +42,13 @@ class FilePrompter(Tkinter.Tk):
         self.filename_entry = Tkinter.Entry(self, textvariable=self.filename_entry_var)
         self.filename_entry.grid(column=1, columnspan=3, row=0, sticky='EW')
         self.filename_entry.bind("<Return>", self.onOKPressed)
-        self.filename_entry_var.set("")
-
         label_CSV_filename = Tkinter.Label(self, text="CSV Output")
         label_CSV_filename.grid(column=0, row=1, sticky='EW')
         self.output_csv_filename_var = Tkinter.StringVar()
         self.output_csv_filename_entry = Tkinter.Entry(self, textvariable=self.output_csv_filename_var)
         self.output_csv_filename_var.set(DEFAULT_CSV_NAME)
         self.output_csv_filename_entry.grid(column=1, columnspan=3, row=1, sticky='EW')
+
 
         button_open = Tkinter.Button(self, text="Open...", command=self.onOpen)
         button_open.grid(column=4, row=0)
@@ -105,6 +105,18 @@ class FilePrompter(Tkinter.Tk):
         self.resizable(True, False)
 
         self.input_defaults()
+
+        if len(sys.argv)>1:
+            fl=path.abspath(sys.argv[1])
+            self.filename_entry_var.set(fl)
+            basename, _ = path.splitext(path.basename(fl))
+            self.output_csv_filename_var.set('{}-{}'.format(basename, DEFAULT_CSV_NAME))
+            cache = self.settings_saver.read_from_cache(fl)
+            self.set_circle(cache.circle)
+            self.set_kalman(cache.kalman)
+        else:
+            self.filename_entry_var.set("")
+
 
     def input_defaults(self):
         self.reset_circle()

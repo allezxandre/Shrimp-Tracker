@@ -65,6 +65,7 @@ class Detector(object):
             frame = cv2.morphologyEx(frame_before, cv2.MORPH_OPEN, self.kernel)
         else:
             frame = frame_before
+        cv2.imshow('Tracking', frame*255)
         if self.mask is None:
             self.mask = frame.astype(np.uint32)
         else:
@@ -85,6 +86,8 @@ class Detector(object):
         frame_before = CircleCrop.value_around_circle(frame, value=0, circle=self.circle(frame))
         if self.mask is not None:
             frame_before = cv2.bitwise_not(cv2.bitwise_or(frame_before,self.mask))
+        else:
+            frame_before = cv2.bitwise_not(frame_before)
  
         # Erode/dilate
         if self.kernel is not None:
@@ -110,7 +113,7 @@ class Detector(object):
                 cov_xx1 = m['mu20'] / m['m00']
                 cov_xy1 = m['mu11'] / m['m00']
                 cov_yy1 = m['mu02'] / m['m00']
-                angle = 0.5 * math.atan2(2 * cov_xy1, (cov_xx1 - cov_yy1)) + np.pi / 2
+                angle = 0.5 * math.atan2(2 * cov_xy1, (cov_xx1 - cov_yy1)) 
                 lambda1, lambda2 = Detector.compute_lambdas(m)
                 r1=2*math.sqrt(lambda1)
                 r2=2*math.sqrt(lambda2)
@@ -118,7 +121,7 @@ class Detector(object):
                     print("%d,%.0f,%.0f,%.1f,%.1f,%.4f"%(icnt,area,math.pi*r1*r2,r1,r2,r2/r1))
                     cv2.ellipse(sbs, center=(int(cx),int(cy)), 
                             axes=(int(r1),int(r2)), 
-                            angle=90+angle*180./math.pi, startAngle=0, endAngle=360, color=(0,0,255))
+                            angle=angle*180./math.pi, startAngle=0, endAngle=360, color=(0,0,255))
                 if r2/r1 > 0.1 and math.pi*r1*r2/area < 2.0:
                     v = np.array([cx, cy, angle, area, lambda1, lambda2])
                     vectors.append(v)

@@ -3,6 +3,7 @@ import copy
 import cv2
 import numpy as np
 import os.path
+import math
 
 from Circle_Detection.circle_crop import CircleCrop
 from Shrimp import CX, CY
@@ -17,7 +18,9 @@ PAUSE_KEY = ord(u'\r')
 FRAME_BY_FRAME_KEY = ord(u' ')
 ESC_KEY = 27
 
+DISPLAY_CONTOURS = False
 DISPLAY_ORIGINAL = False
+BUILD_MASK = False
 
 
 def resizeFrame(frame, resize):
@@ -34,11 +37,11 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
     avi = None
 
 
-    detector = Detector(minimum_area=100, maximum_area=600, debug=False)
+    detector = Detector(minimum_area=100, maximum_area=700, debug=False)
     tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5, observation_matrix=kalman,
                       tracer=TracerCSV(output_CSV_path=output_CSV_name))
 
-    pause = True
+    pause = False
 
     # Infinite loop to process video frames
     tracks_window = TrackWindow()
@@ -48,23 +51,25 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
     import random
     random.shuffle(colors)
 
-    # First build a mask of static pixels
-    cap = cv2.VideoCapture(filename)
-    detector.reset_mask()
-    frame_count = 0
-    while True:
-        # Capture frame-by-frame (and resize)
-        ret, frame = cap.read()
-        if not ret:
-            break
-        frame = resizeFrame(frame, resize)
-        # Crop to the circle and add black pixels
-        frame = CircleCrop.crop_circle(frame, circle)
-        # Make copy of original frame
-        frame = CircleCrop.value_around_circle(frame, None)
-        detector.update_mask(frame)
-        frame_count += 1
-    detector.finalize_mask(max(1,(10*frame_count)/100))
+    if BUILD_MASK:
+        # First build a mask of static pixels
+        cap = cv2.VideoCapture(filename)
+        detector.reset_mask()
+        frame_count = 0
+        while True:
+            # Capture frame-by-frame (and resize)
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = resizeFrame(frame, resize)
+            # Crop to the circle and add black pixels
+            frame = CircleCrop.crop_circle(frame, circle)
+            # Make copy of original frame
+            frame = CircleCrop.value_around_circle(frame, None)
+            detector.update_mask(frame)
+            frame_count += 1
+            cv2.waitKey(10)
+        detector.finalize_mask(max(1,(10*frame_count)/100))
 
     cap = cv2.VideoCapture(filename)
     while True:
@@ -92,6 +97,18 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
             cv2.circle(uncropped_frame,(circle[0],circle[1]),circle[2],(0,0,255), 3)
             cv2.imshow('Original', uncropped_frame)
 
+        if DISPLAY_CONTOURS:
+            for C in contours:
+                r1=2*math.sqrt(C[4])
+                r2=2*math.sqrt(C[5])
+                cv2.line(frame,(int(C[0]),int(C[1])),
+                        (int(C[0]+r1*math.cos(C[2])),int(C[1]+r1*math.sin(C[2]))),
+                        (0,0,0),1) 
+                cv2.ellipse(frame, center=(int(C[0]),int(C[1])), 
+                        axes=(int(r1),int(r2)), 
+                        angle=C[2]*180./math.pi, startAngle=0, endAngle=360,
+                        color=(0,0,0))
+
         for shrimp in tracker.tracks:
             color = colors[shrimp.id % len(colors)] + (1.0 / (1 + shrimp.skipped_frames),)
             trace = shrimp.trace(5)
@@ -105,14 +122,21 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
                     cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
 
             # Display the resulting tracking frame
-            cropped, rect = Crop.crop_around_shrimp(copy.copy(orig_frame), shrimp)
+            cropped, rect, box = Crop.crop_around_shrimp(copy.copy(orig_frame), shrimp)
             size = rect[1][0]*rect[1][1]
             accuracy = shrimp.accuracy()
-            box = cv2.boxPoints(rect)
+            # box = cv2.boxPoints(rect)
             box = np.int0(box)
             if accuracy[0]*accuracy[1] < size:
                 cv2.drawContours(frame, [box], 0, color, 2)
-                cv2.ellipse(frame, center=shrimp.center, axes=accuracy, angle=0, startAngle=0, endAngle=360,
+                cx,cy = shrimp.center
+                angle=shrimp.angle
+                r1=2*math.sqrt(shrimp.lambda1)
+                r2=2*math.sqrt(shrimp.lambda2)
+                cv2.line(frame,(cx,cy),
+                        (int(cx+r1*math.cos(angle)),int(cy+r1*math.sin(angle))),
+                        color,1) 
+                cv2.ellipse(frame, center=shrimp.center, axes=accuracy, angle=angle*180/math.pi, startAngle=0, endAngle=360,
                         color=color)
                 tracks_window.update_shrimp(cropped, shrimp.id, color)
 
