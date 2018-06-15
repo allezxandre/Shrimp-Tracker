@@ -20,16 +20,19 @@ ESC_KEY = 27
 
 DISPLAY_CONTOURS = False
 DISPLAY_ORIGINAL = False
-BUILD_MASK = False
+BUILD_MASK = True
 
 
 def resizeFrame(frame, resize):
     return cv2.resize(frame, (0, 0), fx=resize, fy=resize) if resize is not None else frame
 
 
-def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
+def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=None):
     if len(filename) == 0:
         raise ValueError('Filename is empty')
+
+    if not os.path.exists(filename):
+        raise ValueError('Filename does not exist')
 
     if circle is None or len(circle) != 3:
         raise ValueError('Circle is invalid.')
@@ -37,9 +40,15 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
     avi = None
 
 
-    detector = Detector(minimum_area=100, maximum_area=700, debug=False)
-    tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5, observation_matrix=kalman,
-                      tracer=TracerCSV(output_CSV_path=output_CSV_name))
+    mask = None
+    try:
+        mask = settings.read_from_cache(filename).mask
+    except AttributeError:
+        pass
+    detector = Detector(minimum_area=100, maximum_area=700, 
+            mask=mask, debug=False)
+    tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5,
+            observation_matrix=kalman, tracer=TracerCSV(output_CSV_path=output_CSV_name))
 
     pause = False
 
@@ -51,26 +60,27 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
     import random
     random.shuffle(colors)
 
-    if BUILD_MASK:
-        # First build a mask of static pixels
-        cap = cv2.VideoCapture(filename)
-        detector.reset_mask()
-        frame_count = 0
-        while True:
-            # Capture frame-by-frame (and resize)
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame = resizeFrame(frame, resize)
-            # Crop to the circle and add black pixels
-            frame = CircleCrop.crop_circle(frame, circle)
-            # Make copy of original frame
-            frame = CircleCrop.value_around_circle(frame, None)
-            detector.update_mask(frame)
-            frame_count += 1
-            cv2.waitKey(10)
-        detector.finalize_mask(max(1,(10*frame_count)/100))
-
+    if BUILD_MASK and (detector.mask is None):
+            # First build a mask of static pixels
+            cap = cv2.VideoCapture(filename)
+            detector.reset_mask()
+            frame_count = 0
+            while True:
+                # Capture frame-by-frame (and resize)
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frame = resizeFrame(frame, resize)
+                # Crop to the circle and add black pixels
+                frame = CircleCrop.crop_circle(frame, circle)
+                # Make copy of original frame
+                frame = CircleCrop.value_around_circle(frame, None)
+                detector.update_mask(frame)
+                frame_count += 1
+                cv2.waitKey(10)
+            detector.finalize_mask(max(1,(10*frame_count)/100))
+            mask = settings.add_to_cache(filename, mask=detector.mask)
+    
     cap = cv2.VideoCapture(filename)
     while True:
         tracks_window.reset()
@@ -85,8 +95,8 @@ def main(filename, circle, resize=None, kalman=None, output_CSV_name=None):
         frame = CircleCrop.crop_circle(frame, circle)
 
         # Make copy of original frame
+        frame = CircleCrop.value_around_circle(frame, None, mask=detector.mask)
         orig_frame = copy.copy(frame)
-        frame = CircleCrop.value_around_circle(frame, None)
 
         contours = detector.detect(frame)
 

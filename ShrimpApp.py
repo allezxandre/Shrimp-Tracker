@@ -104,6 +104,8 @@ class FilePrompter(Tkinter.Tk):
         self.grid_columnconfigure(0, weight=1)
         self.resizable(True, False)
 
+        self.bind('<Return>', (lambda e, b=buttonOK: b.invoke()))
+
         self.input_defaults()
 
         if len(sys.argv)>1:
@@ -235,6 +237,11 @@ if __name__ == "__main__":
     # User pressed OK at this point
     filename = app.video_filename
     if len(filename) == 0: exit(EXIT_CODE_NO_FILENAME_PROVIDED)
+    if not path.exists(filename):
+        print("File does not exist: '%s'" % filename)
+        exit(EXIT_CODE_NO_FILENAME_PROVIDED)
+
+
     circle = app.circle
     kalman = app.kalman
     if kalman is None: exit(EXIT_CODE_INVALID_KALMAN)
@@ -249,4 +256,4 @@ if __name__ == "__main__":
     settings.add_to_cache(filename, circle=circle)
     settings.add_to_cache(filename, kalman=kalman)
 
-    main(filename, resize=resize, circle=circle, kalman=kalman, output_CSV_name=output_CSV_name)
+    main(filename, settings, resize=resize, circle=circle, kalman=kalman, output_CSV_name=output_CSV_name)

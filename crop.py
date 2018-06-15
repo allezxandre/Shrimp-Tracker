@@ -17,6 +17,7 @@ class Crop(object):
 
         C = np.array([cx,cy])
         u = np.array([length/2 * math.cos(angle), length/2 * math.sin(angle)])
+        ut = np.array([-length/2 * math.sin(angle), length/2 * math.cos(angle)])
         v = np.array([-thickness/2 * math.sin(angle), thickness/2 * math.cos(angle)])
 
         # p1 = np.array([cx + length / 2 * math.cos(angle), cy + length / 2 * math.sin(angle)])
@@ -29,12 +30,9 @@ class Crop(object):
         # corner3 = np.array(p2) + np.array([-length / 2 * math.cos(angle), -length / 2 * math.sin(angle)])
         # corner4 = np.array(p4) + np.array([-length / 2 * math.cos(angle), -length / 2 * math.sin(angle)])
 
-        corner1 = C + u + v
-        corner2 = C - u + v
-        corner3 = C - u - v
-        corner4 = C + u - v
 
-        box = [corner1, corner2, corner3, corner4]
+        fittedbox = [C + u + v, C - u + v, C - u - v, C + u - v]
+        box = [C + u + ut, C - u + ut, C - u - ut, C + u - ut]
 
         Xs = [i[0] for i in box]
         Ys = [i[1] for i in box]
@@ -56,8 +54,8 @@ class Crop(object):
         # Cropped upright rectangle
         cropped = cv2.getRectSubPix(frame, size, center)
         # Rotate and crop
-        cropped = cv2.warpAffine(cropped, M, size)
+        cropped = cv2.warpAffine(cropped, M, size, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))
         croppedW = (thickness if thickness > length else length) + 5
         croppedH = (thickness if thickness < length else length) + 5
         # Final cropped & rotated rectangle
-        return cv2.getRectSubPix(cropped, (int(croppedW), int(croppedH)), (size[0] / 2, size[1] / 2)), rect, box
+        return cv2.getRectSubPix(cropped, (int(croppedW), int(croppedH)), (size[0] / 2, size[1] / 2)), rect, fittedbox

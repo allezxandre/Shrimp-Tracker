@@ -8,7 +8,7 @@ from utils import side_by_side
 
 
 class Detector(object):
-    def __init__(self, minimum_area, maximum_area, kernel=np.ones((3, 3)), circle=None, debug=False):
+    def __init__(self, minimum_area, maximum_area, kernel=np.ones((3, 3)), circle=None, mask=None, debug=False):
         self.minimum_area = minimum_area
         self.maximum_area = maximum_area
 
@@ -18,7 +18,7 @@ class Detector(object):
 
         self.debug = debug
         self._circle = circle
-        self.mask = None
+        self.mask = mask
 
     @staticmethod
     def compute_lambdas(moments):

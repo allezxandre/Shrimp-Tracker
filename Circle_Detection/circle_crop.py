@@ -27,7 +27,7 @@ class CircleCrop:
         return frame[(y - r):(y + r), (x - r):(x + r)]
 
     @staticmethod
-    def value_around_circle(frame: np.ndarray, value=0, circle=None):
+    def value_around_circle(frame: np.ndarray, value=0, circle=None, mask=None):
         if circle is None:
             cx, cy, radius = frame.shape[0] // 2, frame.shape[1] // 2, frame.shape[1] // 2 - 2
         else:
@@ -38,6 +38,9 @@ class CircleCrop:
             value = np.mean(frame[index])
         new_frame = np.full(frame.shape[:3], value, dtype=frame.dtype)
         new_frame[index] = frame[index]
+        if mask is not None:
+            tmask = cv2.cvtColor((mask>0).astype(np.uint8),cv2.COLOR_GRAY2RGB)
+            new_frame = (tmask * value + (1-tmask)*new_frame).astype(np.uint8)
         return new_frame
 
     @staticmethod
