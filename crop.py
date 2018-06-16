@@ -54,7 +54,7 @@ class Crop(object):
         # Cropped upright rectangle
         cropped = cv2.getRectSubPix(frame, size, center)
         # Rotate and crop
-        cropped = cv2.warpAffine(cropped, M, size, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))
+        cropped = cv2.warpAffine(cropped, M, size, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(128, 128, 128))
         croppedW = (thickness if thickness > length else length) + 5
         croppedH = (thickness if thickness < length else length) + 5
         # Final cropped & rotated rectangle

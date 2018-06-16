@@ -92,10 +92,10 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
 
         uncropped_frame = copy.copy(frame)
         # Crop to the circle and add black pixels
-        frame = CircleCrop.crop_circle(frame, circle)
+        cropped_frame = CircleCrop.crop_circle(frame, circle)
 
         # Make copy of original frame
-        frame = CircleCrop.value_around_circle(frame, None, mask=detector.mask)
+        frame = CircleCrop.value_around_circle(cropped_frame, None, mask=detector.mask)
         orig_frame = copy.copy(frame)
 
         contours = detector.detect(frame)
@@ -111,10 +111,10 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
             for C in contours:
                 r1=2*math.sqrt(C[4])
                 r2=2*math.sqrt(C[5])
-                cv2.line(frame,(int(C[0]),int(C[1])),
+                cv2.line(cropped_frame,(int(C[0]),int(C[1])),
                         (int(C[0]+r1*math.cos(C[2])),int(C[1]+r1*math.sin(C[2]))),
                         (0,0,0),1) 
-                cv2.ellipse(frame, center=(int(C[0]),int(C[1])), 
+                cv2.ellipse(cropped_frame, center=(int(C[0]),int(C[1])), 
                         axes=(int(r1),int(r2)), 
                         angle=C[2]*180./math.pi, startAngle=0, endAngle=360,
                         color=(0,0,0))
@@ -129,7 +129,7 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
                     y1 = trace.iloc[j, CY]
                     x2 = trace.iloc[j + 1, CX]
                     y2 = trace.iloc[j + 1, CY]
-                    cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                    cv2.line(cropped_frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
 
             # Display the resulting tracking frame
             cropped, rect, box = Crop.crop_around_shrimp(copy.copy(orig_frame), shrimp)
@@ -138,27 +138,53 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
             # box = cv2.boxPoints(rect)
             box = np.int0(box)
             if accuracy[0]*accuracy[1] < size:
-                cv2.drawContours(frame, [box], 0, color, 2)
+                Ig=cv2.cvtColor(cropped,cv2.COLOR_BGR2GRAY)
+                th,It=cv2.threshold(Ig,0,255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+                It = cv2.morphologyEx(It, cv2.MORPH_OPEN, np.ones((3,3)))
+                h,w=It.shape
+                It2 = np.ones((h+2,w+2),dtype=np.uint8)*255
+                It2[1:1+h,1:1+w] = It
+                Itc=cv2.cvtColor(It2,cv2.COLOR_GRAY2RGB)
+                _, cc, _ = cv2.findContours(It2, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+                shrimptype='0'
+                if len(cc)>1:
+                    m = [cv2.moments(c, True) for c in cc]
+                    sm = sorted(zip(cc,m),key=lambda x: x[1]['m00'],reverse=True)
+                    if sm[1][1]['nu21'] > 8e-3:
+                        shrimptype='+'
+                    elif sm[1][1]['nu21'] < -8e-3:
+                        shrimptype='-'
+                    #cv2.drawContours(Itc,[sm[1][0]],0,color,1)
+                    #print("%d,%.6f"%(shrimp.id,sm[1][1]['nu21']))
+                    # print("%d,%s"%(shrimp.id,",".join(["%.5f"%x for x in [
+                    #     sm[1][1]['nu20'],sm[1][1]['nu11'],sm[1][1]['nu02'],
+                    #     sm[1][1]['nu30'],sm[1][1]['nu21'],sm[1][1]['nu12'],sm[1][1]['nu03']]])))
+                if shrimptype=='-':
+                    cropped = cv2.flip(cropped, 0)
+                cv2.putText(cropped, shrimptype, (2,10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0,255,0), 1, cv2.LINE_AA)
+                cv2.drawContours(cropped_frame, [box], 0, color, 2)
+                
                 cx,cy = shrimp.center
                 angle=shrimp.angle
                 r1=2*math.sqrt(shrimp.lambda1)
                 r2=2*math.sqrt(shrimp.lambda2)
-                cv2.line(frame,(cx,cy),
+                cv2.line(cropped_frame,(cx,cy),
                         (int(cx+r1*math.cos(angle)),int(cy+r1*math.sin(angle))),
                         color,1) 
-                cv2.ellipse(frame, center=shrimp.center, axes=accuracy, angle=angle*180/math.pi, startAngle=0, endAngle=360,
+                cv2.ellipse(cropped_frame, center=shrimp.center, axes=accuracy, angle=angle*180/math.pi, startAngle=0, endAngle=360,
                         color=color)
                 tracks_window.update_shrimp(cropped, shrimp.id, color)
+                #tracks_window.update_shrimp(Itc, shrimp.id, color)
 
-        tracking_image = tracks_window.image(height=frame.shape[0])
+        tracking_image = tracks_window.image(height=cropped_frame.shape[0])
         if avi is None:
             fileout,ext=os.path.splitext(filename)
-            avi = cv2.VideoWriter(fileout+"_output.avi", cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, frame.shape[0:2])
-        avi.write(frame)
+            avi = cv2.VideoWriter(fileout+"_output.avi", cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, cropped_frame.shape[0:2])
+        avi.write(cropped_frame)
         if tracking_image is None:
-            cv2.imshow('Tracking', frame)
+            cv2.imshow('Tracking', cropped_frame)
         else:
-            cv2.imshow('Tracking', side_by_side(frame, tracking_image, separator_line_width=1))
+            cv2.imshow('Tracking', side_by_side(cropped_frame, tracking_image, separator_line_width=1))
 
         k = cv2.waitKey(10) & 0xff
         if k == PAUSE_KEY:

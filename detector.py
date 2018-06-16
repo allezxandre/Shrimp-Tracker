@@ -80,8 +80,8 @@ class Detector(object):
         """
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # Clean the image
-        # threshold, frame = cv2.threshold(frame, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-        ret, frame = cv2.threshold(frame, 120, 255, 0)
+        threshold, frame = cv2.threshold(frame, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        # ret, frame = cv2.threshold(frame, 120, 255, 0)
         # Remove the circle
         frame_before = CircleCrop.value_around_circle(frame, value=0, circle=self.circle(frame))
         if self.mask is not None:
@@ -118,7 +118,7 @@ class Detector(object):
                 r1=2*math.sqrt(lambda1)
                 r2=2*math.sqrt(lambda2)
                 if self.debug:
-                    print("%d,%.0f,%.0f,%.1f,%.1f,%.4f"%(icnt,area,math.pi*r1*r2,r1,r2,r2/r1))
+                    # print("%d,%.0f,%.0f,%.1f,%.1f,%.4f"%(icnt,area,math.pi*r1*r2,r1,r2,r2/r1))
                     cv2.ellipse(sbs, center=(int(cx),int(cy)), 
                             axes=(int(r1),int(r2)), 
                             angle=angle*180./math.pi, startAngle=0, endAngle=360, color=(0,0,255))
@@ -126,7 +126,8 @@ class Detector(object):
                     v = np.array([cx, cy, angle, area, lambda1, lambda2])
                     vectors.append(v)
             elif self.debug:
-                print("%d,%.0f"%(icnt,area))
+                #print("%d,%.0f"%(icnt,area))
+                pass
         if self.debug:
             cv2.imshow("Threshold", sbs )
         return vectors
