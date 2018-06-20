@@ -23,7 +23,7 @@ class KalmanFilter(object):
         self.x = np.append(np.asarray(first_observation), [0, 0])  # state vector
         self.P = np.diag((9.0, 9.0, np.pi, 10., 10., 10., 9., 9.))  # covariance matrix
 
-        self.Q = np.diag((3.0, 3.0, np.pi / 6, 35., 30., 30., 2., 0.2))  # process noise matrix
+        self.Q = np.diag((3.0, 3.0, np.pi / 6, 35., 30., 30., 5., 0.2))  # process noise matrix
         self.Q = self.Q ** 2
 
         self.R = observation_matrix  # observation noise matrix

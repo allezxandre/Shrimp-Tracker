@@ -16,6 +16,41 @@ class TrackWindow:
         self.max_width = max_width
 
     def update_shrimp(self, image, id, color):
+        Ig=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+        shrimptype='0'
+        if False:
+            m = cv2.moments(255-Ig, False)
+            # print("%d,%.3e"%(shrimp.id,m['nu21']))
+            # print("%d,%d,%d,%s"%(shrimp.id,Ig.shape[0],Ig.shape[1],",".join(["%.2e"%(x) for x in [
+            #     m['nu20'],m['nu11'],m['nu02'],
+            #     m['nu30'],m['nu21'],m['nu12'],m['nu03']]])))
+            if m['nu21'] > 1e-7:
+                shrimptype='+'
+            elif m['nu21'] < -1e-7:
+                shrimptype='-'
+        else:
+            th,It=cv2.threshold(Ig,0,255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+            It = cv2.morphologyEx(It, cv2.MORPH_OPEN, np.ones((3,3)))
+            h,w=It.shape
+            It2 = np.ones((h+2,w+2),dtype=np.uint8)*255
+            It2[1:1+h,1:1+w] = It
+            _, cc, _ = cv2.findContours(It2, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+            if len(cc)>1:
+                m = [cv2.moments(c, True) for c in cc]
+                sm = sorted(zip(cc,m),key=lambda x: x[1]['m00'],reverse=True)
+                if sm[1][1]['nu21'] > 8e-3:
+                    shrimptype='+'
+                elif sm[1][1]['nu21'] < -8e-3:
+                    shrimptype='-'
+                #Itc=cv2.cvtColor(It2,cv2.COLOR_GRAY2RGB)
+                #cv2.drawContours(Itc,[sm[1][0]],0,color,1)
+                # print("%d,%.6f"%(shrimp.id,sm[1][1]['nu21']))
+                # print("%d,%s"%(shrimp.id,",".join(["%.5f"%x for x in [
+                #     sm[1][1]['nu20'],sm[1][1]['nu11'],sm[1][1]['nu02'],
+                #     sm[1][1]['nu30'],sm[1][1]['nu21'],sm[1][1]['nu12'],sm[1][1]['nu03']]])))
+        if shrimptype=='-':
+            image = cv2.flip(image, 0)
+        cv2.putText(image, shrimptype, (2,10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0,255,0), 1, cv2.LINE_AA)
         self.track_windows[id] = image
         self.colors[id] = color
 

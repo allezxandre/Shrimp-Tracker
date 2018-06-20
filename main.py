@@ -21,6 +21,7 @@ ESC_KEY = 27
 DISPLAY_CONTOURS = False
 DISPLAY_ORIGINAL = False
 BUILD_MASK = True
+SAVE_THUMBS = True
 
 
 def resizeFrame(frame, resize):
@@ -81,13 +82,16 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
             detector.finalize_mask(max(1,(10*frame_count)/100))
             mask = settings.add_to_cache(filename, mask=detector.mask)
     
+    fout=open("paths.csv","w")
     cap = cv2.VideoCapture(filename)
+    frame_count = 0
     while True:
         tracks_window.reset()
         # Capture frame-by-frame (and resize)
         ret, frame = cap.read()
         if not ret:
             break
+        frame_count += 1
         frame = resizeFrame(frame, resize)
 
         uncropped_frame = copy.copy(frame)
@@ -119,6 +123,7 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
                         angle=C[2]*180./math.pi, startAngle=0, endAngle=360,
                         color=(0,0,0))
 
+        # print()
         for shrimp in tracker.tracks:
             color = colors[shrimp.id % len(colors)] + (1.0 / (1 + shrimp.skipped_frames),)
             trace = shrimp.trace(5)
@@ -133,38 +138,21 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
 
             # Display the resulting tracking frame
             cropped, rect, box = Crop.crop_around_shrimp(copy.copy(orig_frame), shrimp)
+            if SAVE_THUMBS:
+                try:
+                    os.makedirs("thumbs/%04d"%shrimp.id)
+                except:
+                    pass
+                cv2.imwrite("thumbs/%04d/%04d.png"%(shrimp.id,frame_count),cropped)
             size = rect[1][0]*rect[1][1]
             accuracy = shrimp.accuracy()
             # box = cv2.boxPoints(rect)
             box = np.int0(box)
             if accuracy[0]*accuracy[1] < size:
-                Ig=cv2.cvtColor(cropped,cv2.COLOR_BGR2GRAY)
-                th,It=cv2.threshold(Ig,0,255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-                It = cv2.morphologyEx(It, cv2.MORPH_OPEN, np.ones((3,3)))
-                h,w=It.shape
-                It2 = np.ones((h+2,w+2),dtype=np.uint8)*255
-                It2[1:1+h,1:1+w] = It
-                Itc=cv2.cvtColor(It2,cv2.COLOR_GRAY2RGB)
-                _, cc, _ = cv2.findContours(It2, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-                shrimptype='0'
-                if len(cc)>1:
-                    m = [cv2.moments(c, True) for c in cc]
-                    sm = sorted(zip(cc,m),key=lambda x: x[1]['m00'],reverse=True)
-                    if sm[1][1]['nu21'] > 8e-3:
-                        shrimptype='+'
-                    elif sm[1][1]['nu21'] < -8e-3:
-                        shrimptype='-'
-                    #cv2.drawContours(Itc,[sm[1][0]],0,color,1)
-                    #print("%d,%.6f"%(shrimp.id,sm[1][1]['nu21']))
-                    # print("%d,%s"%(shrimp.id,",".join(["%.5f"%x for x in [
-                    #     sm[1][1]['nu20'],sm[1][1]['nu11'],sm[1][1]['nu02'],
-                    #     sm[1][1]['nu30'],sm[1][1]['nu21'],sm[1][1]['nu12'],sm[1][1]['nu03']]])))
-                if shrimptype=='-':
-                    cropped = cv2.flip(cropped, 0)
-                cv2.putText(cropped, shrimptype, (2,10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0,255,0), 1, cv2.LINE_AA)
                 cv2.drawContours(cropped_frame, [box], 0, color, 2)
                 
                 cx,cy = shrimp.center
+                fout.write("%d,%d,%e,%e\n"%(frame_count,shrimp.id,cx,cy))
                 angle=shrimp.angle
                 r1=2*math.sqrt(shrimp.lambda1)
                 r2=2*math.sqrt(shrimp.lambda2)
@@ -174,17 +162,18 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
                 cv2.ellipse(cropped_frame, center=shrimp.center, axes=accuracy, angle=angle*180/math.pi, startAngle=0, endAngle=360,
                         color=color)
                 tracks_window.update_shrimp(cropped, shrimp.id, color)
-                #tracks_window.update_shrimp(Itc, shrimp.id, color)
 
+        fout.flush()
         tracking_image = tracks_window.image(height=cropped_frame.shape[0])
         if avi is None:
             fileout,ext=os.path.splitext(filename)
-            avi = cv2.VideoWriter(fileout+"_output.avi", cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, cropped_frame.shape[0:2])
-        avi.write(cropped_frame)
+            avi = cv2.VideoWriter(fileout+"_output.avi", cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, (cropped_frame.shape[0]+100,cropped_frame.shape[1]))
         if tracking_image is None:
             cv2.imshow('Tracking', cropped_frame)
         else:
-            cv2.imshow('Tracking', side_by_side(cropped_frame, tracking_image, separator_line_width=1))
+            sbs = side_by_side(cropped_frame, tracking_image, separator_line_width=1)
+            avi.write(cv2.resize(sbs,(cropped_frame.shape[0]+100,cropped_frame.shape[1])))
+            cv2.imshow('Tracking', sbs)
 
         k = cv2.waitKey(10) & 0xff
         if k == PAUSE_KEY:
@@ -206,6 +195,7 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
                     break
         if k == ESC_KEY:  # 'esc' key has been pressed, exit program.
             break
+    fout.close()
     print("Shrimp tracking completed")
     tracker.write()
     cv2.destroyAllWindows()
