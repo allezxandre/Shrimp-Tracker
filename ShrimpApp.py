@@ -226,7 +226,7 @@ class FilePrompter(Tkinter.Tk):
 
 
 if __name__ == "__main__":
-    resize = 0.7
+    resize = 1.0
 
     settings = SettingsSaver()
 
@@ -249,6 +249,7 @@ if __name__ == "__main__":
 
     if circle is None:
         # Detect circle
+        settings.clear_cache(filename)
         circle = detectCircle(filename, resize=resize)
         if circle is None: exit(EXIT_CODE_CIRCLE_NOT_FOUND)
 

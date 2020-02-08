@@ -18,8 +18,8 @@ PAUSE_KEY = ord(u'\r')
 FRAME_BY_FRAME_KEY = ord(u' ')
 ESC_KEY = 27
 
-DISPLAY_CONTOURS = False
-DISPLAY_ORIGINAL = False
+DISPLAY_CONTOURS = True
+DISPLAY_ORIGINAL = True
 BUILD_MASK = True
 SAVE_THUMBS = True
 
@@ -46,7 +46,7 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
         mask = settings.read_from_cache(filename).mask
     except AttributeError:
         pass
-    detector = Detector(minimum_area=100, maximum_area=700, 
+    detector = Detector(minimum_area=500, maximum_area=3500, 
             mask=mask, debug=False)
     tracker = Tracker(dist_thresh=1000, max_frames_to_skip=30, max_trace_length=5,
             observation_matrix=kalman, tracer=TracerCSV(output_CSV_path=output_CSV_name))
@@ -75,10 +75,12 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
                 # Crop to the circle and add black pixels
                 frame = CircleCrop.crop_circle(frame, circle)
                 # Make copy of original frame
-                frame = CircleCrop.value_around_circle(frame, None)
+                frame = CircleCrop.value_around_circle(frame, 0)
                 detector.update_mask(frame)
                 frame_count += 1
                 cv2.waitKey(10)
+                if frame_count > 60:
+                    break
             detector.finalize_mask(max(1,(10*frame_count)/100))
             mask = settings.add_to_cache(filename, mask=detector.mask)
     
@@ -99,7 +101,7 @@ def main(filename, settings, circle, resize=None, kalman=None, output_CSV_name=N
         cropped_frame = CircleCrop.crop_circle(frame, circle)
 
         # Make copy of original frame
-        frame = CircleCrop.value_around_circle(cropped_frame, None, mask=detector.mask)
+        frame = CircleCrop.value_around_circle(cropped_frame, 0, mask=detector.mask)
         orig_frame = copy.copy(frame)
 
         contours = detector.detect(frame)

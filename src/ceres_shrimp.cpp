@@ -152,7 +152,7 @@ class ShrimpOptimizer {
         };
 
     public:
-        ShrimpOptimizer(const char * filename, size_t n) : N(n), display_cb(*this) {
+        ShrimpOptimizer(const char * filename, size_t n, const cv::Size & avisize, cv::VideoWriter *avi) : N(n), display_cb(*this), avisize(avisize), avi(avi) {
             I = cv::imread(filename);
             X = new double[2*N];
             L = (I.cols-16.)/(N-1);
@@ -202,8 +202,13 @@ class ShrimpOptimizer {
 
         void display() const {
             cv::Mat Ic;
-            float ratio = 20;
-            cv::resize(I,Ic,cv::Size(),ratio,ratio,cv::INTER_NEAREST);
+            cv::Size Isize(500,250);
+            if (avi) {
+                Isize = avisize;
+            }
+            float ratiox = float(Isize.width)/I.cols, ratioy = float(Isize.height)/I.rows;
+            cv::resize(I,Ic,Isize,0,0,cv::INTER_CUBIC);
+            //printf("Size %d %d\n",Ic.rows,Ic.cols);
             for (size_t i=0;i<N;i++) {
                 // int x = int(X[2*i+0]);
                 // int y = int(X[2*i+1]);
@@ -211,11 +216,16 @@ class ShrimpOptimizer {
                 // float dy = grad_y(y,x);
                 // cv::line(Ic,cv::Point(int(X[2*i+0]*ratio),int(X[2*i+1]*ratio)),
                 //         cv::Point(int((X[2*i+0]+dx)*ratio),int((X[2*i+1]+dy)*ratio)), cv::Scalar(255,0,0), 2);
-                cv::circle(Ic, cv::Point(int(X[2*i+0]*ratio),int(X[2*i+1]*ratio)), 5, cv::Scalar(0,0,255), -1);
+                cv::circle(Ic, cv::Point(int(X[2*i+0]*ratiox),int(X[2*i+1]*ratioy)), 5, cv::Scalar(0,0,255), -1);
                 if (i>0) {
-                    cv::line(Ic, cv::Point(int(X[2*(i-1)+0]*ratio),int(X[2*(i-1)+1]*ratio)), 
-                            cv::Point(int(X[2*i+0]*ratio),int(X[2*i+1]*ratio)), cv::Scalar(0,0,255), 2);
+                    cv::line(Ic, cv::Point(int(X[2*(i-1)+0]*ratiox),int(X[2*(i-1)+1]*ratioy)), 
+                            cv::Point(int(X[2*i+0]*ratiox),int(X[2*i+1]*ratioy)), cv::Scalar(0,0,255), 2);
                 }
+            }
+            if (!avi) {
+            }
+            if (avi) {
+                avi->write(Ic);
             }
             cv::imshow("Ic",Ic);
             cv::waitKey(10);
@@ -342,6 +352,8 @@ class ShrimpOptimizer {
         double L;
         size_t N;
         DisplayCallback display_cb;
+        cv::Size avisize;
+        mutable cv::VideoWriter *avi;
 };
 
 
@@ -349,11 +361,15 @@ int main(int argc, char * argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     google::InitGoogleLogging(argv[0]);
     cv::namedWindow("Ic", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
+
+    // avi = new cv::VideoWriter("shrimp.avi",cv::VideoWriter::fourcc('M','J','P','G'), 15, Isize, true);
+    cv::Size avisize(1000,500);
+    cv::VideoWriter avi("shrimp.avi",CV_FOURCC('M','J','P','G'), 15,avisize, true);
     // cv::namedWindow("Ig", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
     // cv::namedWindow("grad_x", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
     // cv::namedWindow("grad_y", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
     for (int i=1;i<argc;i++) {
-        ShrimpOptimizer so(argv[i],12);
+        ShrimpOptimizer so(argv[i],12,avisize,&avi);
         so.optimizeShrimp();
     }
     return 0;

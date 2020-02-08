@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import threading
 import tkinter as tk
 from tkinter import ttk

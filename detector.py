@@ -57,7 +57,8 @@ class Detector(object):
 
     def update_mask(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        ret, frame = cv2.threshold(frame, 120, 1, 0)
+        ret, frame = cv2.threshold(frame, 0, 1, cv2.THRESH_BINARY|cv2.THRESH_OTSU)
+        # ret, frame = cv2.threshold(frame, 120, 1, 0)
         # Remove the circle
         frame_before = CircleCrop.value_around_circle(frame, value=None, circle=self.circle(frame))
         # Erode/dilate
@@ -78,12 +79,16 @@ class Detector(object):
         :param frame: Frame to process
         :return: [cx, cy, angle, area, lambda1, lambda2] vectors found in the frame
         """
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # _,_,frame_gray = cv2.split(frame)
         # Clean the image
-        threshold, frame = cv2.threshold(frame, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-        # ret, frame = cv2.threshold(frame, 120, 255, 0)
+        threshold, frame_thresh = cv2.threshold(frame_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        # threshold, frame_thresh = cv2.threshold(frame_gray, 60, 255, cv2.THRESH_BINARY)
+        if self.debug:
+            cv2.imshow("Base Image", frame_gray )
+            cv2.imshow("Base Threshold", frame_thresh )
         # Remove the circle
-        frame_before = CircleCrop.value_around_circle(frame, value=0, circle=self.circle(frame))
+        frame_before = CircleCrop.value_around_circle(frame_thresh, value=0, circle=self.circle(frame_thresh))
         if self.mask is not None:
             frame_before = cv2.bitwise_not(cv2.bitwise_or(frame_before,self.mask))
         else:

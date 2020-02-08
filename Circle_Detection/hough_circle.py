@@ -66,9 +66,11 @@ def find_circle(input, minDist=350, resize=None, progress_func=None):
     cap = cv2.VideoCapture(input)
     nb_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+
     centers = np.empty((0, 3), int)
     ret, frame = cap.read()
     frame_idx = 1
+    debug = False
     while ret:
         if resize is not None:
             frame = cv2.resize(frame, (0, 0), fx=resize, fy=resize)
@@ -78,20 +80,38 @@ def find_circle(input, minDist=350, resize=None, progress_func=None):
 
         # convert to greyscale
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        thresh,frame_thresh = cv2.threshold(frame_gray,0,255,cv2.THRESH_BINARY|cv2.THRESH_OTSU)
+        frame_thresh = cv2.GaussianBlur(frame_thresh,(9, 9), 2., 2. )
 
         # Find circles
-        circles = cv2.HoughCircles(frame_gray, cv2.HOUGH_GRADIENT, 2, minDist=minDist, param1=255, param2=300)
+        circles = cv2.HoughCircles(frame_thresh, cv2.HOUGH_GRADIENT, 2, minDist=minDist, param1=120, param2=300)
+
+        if debug:
+            cv2.imshow("frame",frame)
+            cv2.imshow("threshold",frame_thresh)
+            frame_draw = frame.copy()
 
         # Add circle to list
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
+            print("Detected %d circles"%circles.shape[0])
+            if debug:
+                for i in range(circles.shape[0]):
+                    cv2.circle(frame_draw,(circles[i,0],circles[i,1]),circles[i,2],(0,0,255),2)
+                cv2.imshow("circles",frame_draw)
             circles = circles[circles[:, 2].argsort()]
             (x, y, r) = circles[-1]
             centers = np.append(centers, np.array([[x, y, r]]), axis=0)
+        else:
+            print("No circle detected")
 
+        if debug:
+            cv2.waitKey(10)
         del frame, circles # Free memory
 
         ret, frame = cap.read()
         frame_idx += 1
+        if frame_idx > 60:
+            break
 
     return np.median(centers, [0]).astype("int"), centers[centers[:, 2].argmin()]

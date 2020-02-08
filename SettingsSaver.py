@@ -52,6 +52,13 @@ class SettingsSaver(object):
             print('Cache does not exist')
             self.cache = {}
 
+    def clear_cache(self, filename):
+        self.cache[filename] = FilenameCache(filename)
+        self.cache[filename].kalman = None
+        self.cache[filename].circle = None
+        self.cache[filename].mask = None
+        self.save_cache()
+
     def add_to_cache(self, filename, kalman=None, circle=None, mask=None):
         if filename not in self.cache or (not isinstance(self.cache[filename], FilenameCache)):
             self.cache[filename] = FilenameCache(filename)
