@@ -36,7 +36,8 @@ class Tracker:
     def write(self):
         for i, shrimp in enumerate(self.tracks):
             self.tracer.add(shrimp.trace_df)
-            del self.tracks[i]
+            # del self.tracks[i]
+        self.tracks=[]
         self.tracer.write()
 
 

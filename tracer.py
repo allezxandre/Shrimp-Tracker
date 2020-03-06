@@ -25,4 +25,4 @@ class TracerCSV(Tracer):
     def write(self, minimum_length=10):
         if self.output_CSV_path is None: return
         trace_sorted = self.trace.sort_values(by=['Track ID', 'Timestep'])
-        trace_sorted.to_csv(self.output_CSV_path)
+        trace_sorted.to_csv(self.output_CSV_path,index=False)
