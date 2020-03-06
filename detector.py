@@ -123,11 +123,13 @@ class Detector(object):
                 r1=2*math.sqrt(lambda1)
                 r2=2*math.sqrt(lambda2)
                 if self.debug:
-                    # print("%d,%.0f,%.0f,%.1f,%.1f,%.4f"%(icnt,area,math.pi*r1*r2,r1,r2,r2/r1))
+                    print("%d,%.0f,%.0f,%.1f,%.1f,%.4f"%(icnt,area,math.pi*r1*r2,r1,r2,r2/r1))
                     cv2.ellipse(sbs, center=(int(cx),int(cy)), 
                             axes=(int(r1),int(r2)), 
                             angle=angle*180./math.pi, startAngle=0, endAngle=360, color=(0,0,255))
-                if r2/r1 > 0.1 and math.pi*r1*r2/area < 2.0:
+                if r2/r1 > 0.1 and math.pi*r1*r2/area < 4.0:
+                    if self.debug:
+                        print("Appended")
                     v = np.array([cx, cy, angle, area, lambda1, lambda2])
                     vectors.append(v)
             elif self.debug:

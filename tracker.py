@@ -86,10 +86,11 @@ class Tracker:
 
         # If tracks are not detected for long time, remove them
         del_tracks = []
-        for i in range(len(self.tracks)):
-            if (self.tracks[i].skipped_frames > self.max_frames_to_skip):
+        for i,t in enumerate(self.tracks):
+            if (t.skipped_frames > self.max_frames_to_skip):
                 del_tracks.append(i)
         if len(del_tracks) > 0:  # only when skipped frame exceeds max
+            del_tracks.reverse()
             for idx in del_tracks:
                 if idx < len(self.tracks):
                     self.tracer.add(self.tracks[idx].trace_df)

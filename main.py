@@ -14,14 +14,14 @@ from tracer import TracerCSV
 from tracker import Tracker
 from utils import generate_color_set, side_by_side
 
-PAUSE_KEY = ord(u'\r')
+PAUSE_KEY = ord(u'p')
 FRAME_BY_FRAME_KEY = ord(u' ')
 ESC_KEY = 27
 
-DISPLAY_CONTOURS = True
-DISPLAY_ORIGINAL = True
+DISPLAY_CONTOURS = False
+DISPLAY_ORIGINAL = False
 BUILD_MASK = True
-SAVE_THUMBS = True
+SAVE_THUMBS = False
 
 
 def resizeFrame(frame, resize):
